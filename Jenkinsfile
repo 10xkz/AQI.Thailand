@@ -63,18 +63,17 @@ pipeline {
         }
         
         // Stage 6: Deploy
+        // Stage 6: Deploy (ฉบับมือโปร)
         stage('Deploy') {
             steps {
-                echo '6. Deploying application...'
-        // ดึง Secret file มาเก็บไว้ในตัวแปรชั่วคราวชื่อ ENV_PATH
-                withCredentials([file(credentialsId: 'backend-env', variable: 'ENV_PATH')]) {
-                    script {
-                        sh "cp ${ENV_PATH} .env"
-                
-                // สั่งรัน Docker Compose ตามปกติ
-                        sh "docker-compose down -v --remove-orphans || true"
-                        sh "docker-compose up -d --build"
-                    }
+                echo '6. Deploying to Kubernetes...'
+                script {
+                    // สั่ง Apply ไฟล์ตั้งค่าทั้งหมด (ที่เราจะสร้างในข้อ 3)
+                    sh "kubectl apply -f k8s-deployment.yaml -n jenkins"
+
+                    // สั่งให้ K8s ไปดึง Image ใหม่ล่าสุดมาใช้ (Force Update)
+                    sh "kubectl rollout restart deployment pm25-backend -n jenkins"
+                    sh "kubectl rollout restart deployment pm25-frontend -n jenkins"
                 }
             }   
         }

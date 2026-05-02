@@ -1,0 +1,64 @@
+# --- Backend ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pm25-backend
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: rubchek/pm25-backend:latest
+        envFrom:
+        - secretRef:
+            name: pm25-secrets # ใช้ตัวที่คุณสร้างไว้แล้ว
+---
+# --- Frontend ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pm25-frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: rubchek/pm25-frontend:latest
+---
+# --- Prometheus (แก้ปัญหา Mount พัง) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pm25-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prometheus.yml # ดึงไฟล์ออกมาจาก ConfigMap ตรงๆ ไม่พังแน่นอน
+      volumes:
+      - name: config-volume
+        configMap:
+          name: prometheus-config
