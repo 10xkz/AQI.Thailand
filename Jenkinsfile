@@ -72,6 +72,7 @@ pipeline {
                         sh "cp ${ENV_PATH} .env"
                 
                 // สั่งรัน Docker Compose ตามปกติ
+                        sh "docker-compose down -v --remove-orphans || true"
                         sh "docker-compose up -d --build"
                     }
                 }
