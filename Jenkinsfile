@@ -66,10 +66,17 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo '6. Deploying application...'
-                // สำหรับ Phase 2: เราสั่ง Deploy ลง Docker Compose ในเครื่องไปก่อน
-                // เดี๋ยวพอถึง Phase 4 (Kubernetes) เราค่อยมาแก้บรรทัดนี้เป็น kubectl apply แบบในรูปครับ
-                sh "docker-compose up -d"
-            }
+        // ดึง Secret file มาเก็บไว้ในตัวแปรชั่วคราวชื่อ ENV_PATH
+                withCredentials([file(credentialsId: 'backend-env', variable: 'ENV_PATH')]) {
+                    script {
+                        sh "cp ${ENV_PATH} .env"
+                
+                // สั่งรัน Docker Compose ตามปกติ
+                        sh "docker-compose up -d --build"
+                    }
+                }
+            }   
         }
     }
+    
 }
