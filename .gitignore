@@ -1,0 +1,70 @@
+```gitignore
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# YAML overrides / local configs
+docker-compose.override.yml
+*.local.yml
+*.local.yaml
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# FastAPI / cache
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# Docker / volumes
+docker-data/
+postgres-data/
+volumes/
+*.tar
+
+# Database
+*.sqlite3
+*.db
+
+# Temporary files
+tmp/
+temp/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Misc
+*.swp
+```
