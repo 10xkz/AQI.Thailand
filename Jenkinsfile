@@ -62,21 +62,21 @@ pipeline {
             }
         }
         
-        // Stage 6: Deploy
-        // Stage 6: Deploy (ฉบับมือโปร)
         // Stage 6: Deploy to K8s
         stage('Deploy') {
             steps {
                 echo '6. Deploying to Kubernetes...'
                 script {
-                    // 1. ดาวน์โหลด kubectl มาไว้ในเครื่องชั่วคราว
-                    sh "curl -LO 'https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl'"
-                    sh "chmod +x ./kubectl"
+                    // ใช้ Single Quote ('') เพื่อกันไม่ให้ Jenkins สับสนกับเครื่องหมาย $
+                    sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'
+                    sh 'chmod +x ./kubectl'
 
-                    // 2. ใช้ ./kubectl (มีจุดนำหน้า) เพื่อรันไฟล์ที่เราเพิ่งโหลดมา
-                    sh "./kubectl apply -f k8s-deployment.yaml -n jenkins"
-                    sh "./kubectl rollout restart deployment pm25-backend -n jenkins"
-                    sh "./kubectl rollout restart deployment pm25-frontend -n jenkins"
+                    // รันคำสั่ง apply
+                    sh './kubectl apply -f k8s-deployment.yaml -n jenkins'
+                    
+                    // สั่ง restart เพื่อดึง image ใหม่
+                    sh './kubectl rollout restart deployment pm25-backend -n jenkins'
+                    sh './kubectl rollout restart deployment pm25-frontend -n jenkins'
                 }
             }   
         }
