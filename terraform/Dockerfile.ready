@@ -1,6 +1,9 @@
 FROM ubuntu:20.04
 
-# ใส่ทุกอย่างที่อยู่ใน Task "Install system dependencies" ลงไปที่นี่เลยครับ
+# --- เพิ่มบรรทัดนี้เข้าไปครับ ---
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ส่วนที่เหลือเหมือนเดิม แต่สังเกตตรง sudo นะครับ (ใน log บอสพิมพ์แค่ su)
 RUN apt-get update && apt-get install -y \
     openssh-server \
     sudo \
