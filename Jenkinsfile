@@ -68,7 +68,7 @@ pipeline {
             }
         }
         
-        // Stage 6: Deploy (Terraform + Ansible + K8s)
+        // Stage 6: Deploy & Verify (Terraform + Ansible + K8s)
         stage('Deploy') {
             steps {
                 echo '6. Deploying (Terraform + Ansible + K8s)...'
@@ -88,9 +88,13 @@ pipeline {
                     // สั่ง restart เพื่อดึง image ใหม่
                     sh 'kubectl rollout restart deployment pm25-backend -n jenkins'
                     sh 'kubectl rollout restart deployment pm25-frontend -n jenkins'
+                    
+                    sh 'kubectl rollout status deployment/pm25-backend -n jenkins --timeout=120s'
+                    sh 'kubectl rollout status deployment/pm25-frontend -n jenkins --timeout=120s'
+                    echo 'Pods are successfully running!'
+                    sh 'curl -sSf http://localhost:30080 > /dev/null && echo "✅ Frontend is Accessible!"'
                 }
             }   
         }
     }
-    
 }
