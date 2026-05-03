@@ -1,11 +1,17 @@
 FROM ubuntu:20.04
 
+# ใส่ทุกอย่างที่อยู่ใน Task "Install system dependencies" ลงไปที่นี่เลยครับ
 RUN apt-get update && apt-get install -y \
     openssh-server \
     sudo \
-    nginx \
+    curl \
+    wget \
+    git \
+    apt-transport-https \
+    ca-certificates \
+    software-properties-common \
     && mkdir -p /var/run/sshd \
     && rm -rf /var/lib/apt/lists/*
 
-EXPOSE 22 80
+EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
