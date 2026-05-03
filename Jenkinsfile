@@ -92,7 +92,11 @@ pipeline {
                     sh 'kubectl rollout status deployment/pm25-backend -n jenkins --timeout=120s'
                     sh 'kubectl rollout status deployment/pm25-frontend -n jenkins --timeout=120s'
                     echo 'Pods are successfully running!'
-                    sh 'curl -sSf http://localhost:30080 > /dev/null && echo "Frontend is Accessible!"'
+                    sh '''
+                        FRONTEND_IP=$(kubectl get svc frontend -n jenkins -o jsonpath="{.spec.clusterIP}")
+                        echo "Testing URL: http://$FRONTEND_IP"
+                        curl -sSf "http://$FRONTEND_IP" > /dev/null && echo "Frontend is Accessible!"
+                    '''
                 }
             }   
         }
