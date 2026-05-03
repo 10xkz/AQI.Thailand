@@ -76,8 +76,6 @@ pipeline {
                     sh 'terraform init -input=false'
                     sh 'terraform apply -auto-approve -input=false'
                 }
-                echo 'Waiting for SSH Server to be ready inside the container...'
-                sh 'sleep 180'
                 dir('ansible') {
                     sh 'ansible-playbook -i inventory.ini playbook.yml'
                 }

@@ -50,7 +50,7 @@ resource "docker_network" "pm25_net" {
 
 resource "docker_container" "pm25_dummy_server" {
   name  = "ansible-target-node"
-  image = docker_image.ubuntu.image_id
+  image = "my-pm25-target:latest"
 
   env = [
     "SSH_PUB_KEY=${tls_private_key.ansible.public_key_openssh}",
@@ -59,9 +59,8 @@ resource "docker_container" "pm25_dummy_server" {
 
   # ติดตั้ง SSH และสร้างผู้ใช้ ubuntu เพื่อจำลอง VM จริง
   command = [
-    "/bin/bash",
-    "-c",
-    "set -e; apt-get update; apt-get install -y openssh-server sudo; id -u ubuntu >/dev/null 2>&1 || useradd -m -s /bin/bash ubuntu; mkdir -p /home/ubuntu/.ssh; echo \"$SSH_PUB_KEY\" > /home/ubuntu/.ssh/authorized_keys; chown -R ubuntu:ubuntu /home/ubuntu/.ssh; chmod 700 /home/ubuntu/.ssh; chmod 600 /home/ubuntu/.ssh/authorized_keys; echo \"ubuntu ALL=(ALL) NOPASSWD:ALL\" >/etc/sudoers.d/ubuntu; mkdir -p /var/run/sshd; /usr/sbin/sshd -D",
+    "/bin/bash", "-c",
+    "useradd -m -s /bin/bash ubuntu || true; mkdir -p /home/ubuntu/.ssh; echo \"$SSH_PUB_KEY\" > /home/ubuntu/.ssh/authorized_keys; chown -R ubuntu:ubuntu /home/ubuntu/.ssh; chmod 700 /home/ubuntu/.ssh; chmod 600 /home/ubuntu/.ssh/authorized_keys; echo \"ubuntu ALL=(ALL) NOPASSWD:ALL\" >/etc/sudoers.d/ubuntu; /usr/sbin/sshd -D"
   ]
 
   networks_advanced {
