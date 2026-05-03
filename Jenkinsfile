@@ -8,6 +8,10 @@ pipeline {
         DOCKER_CREDS    = 'docker-hub-credentials'
     }
 
+    triggers {
+        githubPush()
+    }
+
     stages {
         // Stage 1: Checkout
         stage('Checkout') {
