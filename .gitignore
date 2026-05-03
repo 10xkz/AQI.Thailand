@@ -67,4 +67,11 @@ htmlcov/
 
 # Misc
 *.swp
+
+# Terraform (local state and generated SSH keys)
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/ansible_id_rsa
+terraform/ansible_id_rsa.pub
 ```

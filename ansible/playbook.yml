@@ -2,6 +2,8 @@
 - name: Configure PM2.5 Monitor Environment
   hosts: webservers
   become: yes # ใช้สิทธิ์ Root (sudo)
+  vars:
+    is_container: "{{ ansible_virtualization_type in ['docker', 'containerd'] }}"
   tasks:
     - name: Update apt cache
       apt:
@@ -22,28 +24,33 @@
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
+      when: not is_container
 
     - name: Add Docker Repository
       apt_repository:
         repo: deb https://download.docker.com/linux/ubuntu focal stable
         state: present
+      when: not is_container
 
     - name: Install Docker Engine
       apt:
         name: docker-ce
         state: present
+      when: not is_container
 
     - name: Ensure Docker is running
       service:
         name: docker
         state: started
         enabled: yes
+      when: not is_container
 
     - name: Add ubuntu user to docker group
       user:
         name: ubuntu
         groups: docker
         append: yes
+      when: not is_container
 
     - name: Ensure specific environment folders exist
       file:

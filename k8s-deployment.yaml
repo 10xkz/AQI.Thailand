@@ -1,3 +1,20 @@
+# --- Database Init SQL ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pm25-db-init
+  namespace: jenkins
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS favorites (
+        id SERIAL PRIMARY KEY,
+        station_name TEXT NOT NULL,
+        pm25_value NUMERIC,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    INSERT INTO favorites (station_name, pm25_value) VALUES ('Bangkok Startup Station', 25.5);
+---
 # --- Backend ---
 apiVersion: apps/v1
 kind: Deployment
@@ -60,15 +77,28 @@ spec:
       - name: postgres
         image: postgres:15-alpine
         env:
-          - name: POSTGRES_DB
-            value: "pm25_db"
-          - name: POSTGRES_USER
-            value: "admin"
-        envFrom:
-          - secretRef:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
               name: pm25-secrets
+              key: DB_PASSWORD    # ดึงค่ารหัสผ่านจาก Secret
+        - name: POSTGRES_USER
+          value: "user"           # ตรงตามที่บอสกำหนด
+        - name: POSTGRES_DB
+          value: "mydatabase"     # ตรงตามที่บอสกำหนด
         ports:
-          - containerPort: 5432
+        - containerPort: 5432
+        volumeMounts:
+        - name: db-init
+          mountPath: /docker-entrypoint-initdb.d/init.sql
+          subPath: init.sql
+      volumes:
+      - name: db-init
+        configMap:
+          name: pm25-db-init
+          items:
+          - key: init.sql
+            path: init.sql
 ---
 # --- Prometheus ---
 apiVersion: apps/v1
