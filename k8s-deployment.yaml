@@ -17,7 +17,7 @@ spec:
         image: rubchek/pm25-backend:latest
         envFrom:
         - secretRef:
-            name: pm25-secrets # ใช้ตัวที่คุณสร้างไว้แล้ว
+            name: pm25-secrets # ใช้ Secret ตัวที่สร้างไว้แล้ว
 ---
 # --- Frontend ---
 apiVersion: apps/v1
@@ -37,7 +37,7 @@ spec:
       - name: frontend
         image: rubchek/pm25-frontend:latest
 ---
-# --- Prometheus (แก้ปัญหา Mount พัง) ---
+# --- Prometheus ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -57,8 +57,39 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /etc/prometheus/prometheus.yml
-          subPath: prometheus.yml # ดึงไฟล์ออกมาจาก ConfigMap ตรงๆ ไม่พังแน่นอน
+          subPath: prometheus.yml
       volumes:
       - name: config-volume
         configMap:
           name: prometheus-config
+---
+# --- Services backend ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: jenkins
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+
+---
+# --- Services frontend ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: jenkins
+spec:
+  type: NodePort       
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80 
+      targetPort: 80
+      nodePort: 30080 
