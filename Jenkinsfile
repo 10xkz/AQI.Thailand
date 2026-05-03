@@ -80,16 +80,12 @@ pipeline {
                     sh 'ansible-playbook -i inventory.ini playbook.yml'
                 }
                 script {
-                    // ใช้ Single Quote ('') เพื่อกันไม่ให้ Jenkins สับสนกับเครื่องหมาย $
-                    sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'
-                    sh 'chmod +x ./kubectl'
+                    // รันคำสั่ง apply ผ่าน Jenkins ด้วย ServiceAccount
+                    sh 'kubectl apply -f k8s-deployment.yaml -n jenkins'
 
-                    // รันคำสั่ง apply
-                    sh './kubectl apply -f k8s-deployment.yaml -n jenkins'
-                    
                     // สั่ง restart เพื่อดึง image ใหม่
-                    sh './kubectl rollout restart deployment pm25-backend -n jenkins'
-                    sh './kubectl rollout restart deployment pm25-frontend -n jenkins'
+                    sh 'kubectl rollout restart deployment pm25-backend -n jenkins'
+                    sh 'kubectl rollout restart deployment pm25-frontend -n jenkins'
                 }
             }   
         }
