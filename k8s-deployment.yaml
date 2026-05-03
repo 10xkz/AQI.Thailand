@@ -41,6 +41,35 @@ spec:
       - name: frontend
         image: rubchek/pm25-frontend:latest
 ---
+# --- Database (PostgreSQL) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pm25-db
+  namespace: jenkins
+spec:
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+          - name: POSTGRES_DB
+            value: "pm25_db"
+          - name: POSTGRES_USER
+            value: "admin"
+        envFrom:
+          - secretRef:
+              name: pm25-secrets
+        ports:
+          - containerPort: 5432
+---
 # --- Prometheus ---
 apiVersion: apps/v1
 kind: Deployment
@@ -98,3 +127,17 @@ spec:
       port: 80 
       targetPort: 80
       nodePort: 30080 
+---
+# --- Services database ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: jenkins
+spec:
+  selector:
+    app: db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

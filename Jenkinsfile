@@ -24,9 +24,11 @@ pipeline {
         // Stage 2: Build
         stage('Build') {
             steps {
-                echo '2. Building application (Checking dependencies)...'
-                // ในโปรเจกต์ Python/HTML เราอาจจะแค่ตรวจสอบไฟล์ หรือข้ามไปทำใน Docker ทีเดียว
-                sh 'echo "Build step ready!"'
+                echo '2. Building application (Checking syntax and structure)...'
+                sh 'python3 -m py_compile backend/main.py'
+                sh 'test -f backend/requirements.txt'
+                sh 'test -f frontend/index.html'
+                echo 'Build preparation check passed!'
             }
         }
         
@@ -66,10 +68,33 @@ pipeline {
             }
         }
         
-        // Stage 6: Deploy to K8s
+        // Stage 6: Provision (Terraform)
+        stage('Provision Infrastructure') {
+            steps {
+                echo '6. Provisioning infrastructure with Terraform...'
+                dir('terraform') {
+                    // จำลองรัน Terraform (ถ้ามีเซิร์ฟเวอร์จริงก็เอา echo ออก)
+                    sh 'echo "terraform init"'
+                    sh 'echo "terraform apply -auto-approve"'
+                }
+            }
+        }
+        
+        // Stage 7: Configure (Ansible)
+        stage('Configure Environment') {
+            steps {
+                echo '7. Configuring server with Ansible...'
+                dir('ansible') {
+                    // จำลองการรัน Ansible Playbook เพื่ออัปเดตเซิร์ฟเวอร์
+                    sh 'echo "ansible-playbook -i inventory.ini playbook.yml"'
+                }
+            }
+        }
+
+        // Stage 8: Deploy to K8s
         stage('Deploy') {
             steps {
-                echo '6. Deploying to Kubernetes...'
+                echo '8. Deploying to Kubernetes...'
                 script {
                     // ใช้ Single Quote ('') เพื่อกันไม่ให้ Jenkins สับสนกับเครื่องหมาย $
                     sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'
