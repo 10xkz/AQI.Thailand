@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pm25-db
+  namespace: jenkins
+spec:
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pm25-secrets
+              key: DB_PASSWORD
+        - name: POSTGRES_USER
+          value: "user"
+        - name: POSTGRES_DB
+          value: "mydatabase"
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: db-init
+          mountPath: /docker-entrypoint-initdb.d/init.sql
+          subPath: init.sql
+        - name: db-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-init
+        configMap:
+          name: pm25-db-init
+      - name: db-storage
+        persistentVolumeClaim:
+          claimName: db-pvc

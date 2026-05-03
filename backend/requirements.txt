@@ -4,3 +4,4 @@ httpx==0.28.1
 python-multipart==0.0.20
 psycopg2-binary==2.9.9
 pydantic==2.5.3
+prometheus-fastapi-instrumentator==7.0.0

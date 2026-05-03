@@ -1,6 +1,6 @@
 """
 PM2.5 Air Quality Monitor — Backend API Service (WAQI Edition)
-FastAPI · Stateful (PostgreSQL) + WAQI Proxy
+FastAPI · Stateful (PostgreSQL) + WAQI Proxy + Prometheus Library
 """
 
 import asyncio
@@ -15,8 +15,8 @@ import httpx
 import psycopg2
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -28,26 +28,7 @@ WAQI_TOKEN = os.getenv("WAQI_API_TOKEN")
 CACHE_TTL_DATA = 1800       # 30 min
 CACHE_TTL_DISCOVERY = 3600  # 1 hour for station list
 
-# Thailand bounding box (lat1,lon1,lat2,lon2)
 THAI_BOUNDS = "5.6,97.3,20.5,105.7"
-
-# ---------------------------------------------------------------------------
-# Stats & Cache
-# ---------------------------------------------------------------------------
-
-class AppStats:
-    def __init__(self) -> None:
-        self.start_time = time.time()
-        self.request_count: dict[str, int] = defaultdict(int)
-        self.error_count: dict[str, int] = defaultdict(int)
-        self.cache_hits = 0
-        self.cache_misses = 0
-        self.api_fetch_count = 0
-        self.api_error_count = 0
-        self.active_requests = 0
-        self.last_api_fetch: dict[str, float] = {}
-
-stats = AppStats()
 
 _discovery_cache: dict[str, tuple[Any, float]] = {}
 _data_cache: dict[str, tuple[Any, float]] = {}
@@ -57,15 +38,12 @@ def cache_get(store: dict, key: str, ttl: float) -> Any | None:
     if entry:
         value, ts = entry
         if time.time() - ts < ttl:
-            stats.cache_hits += 1
             return value
         del store[key]
-    stats.cache_misses += 1
     return None
 
 def cache_set(store: dict, key: str, value: Any) -> None:
     store[key] = (value, time.time())
-    stats.last_api_fetch[key] = time.time()
 
 # ---------------------------------------------------------------------------
 # WAQI client
@@ -82,7 +60,6 @@ async def waqi_get(endpoint: str, params: dict | None = None) -> dict:
 
     params = {**(params or {}), "token": WAQI_TOKEN}
 
-    stats.api_fetch_count += 1
     async with httpx.AsyncClient(timeout=20.0) as client:
         try:
             url = f"{WAQI_BASE}/{endpoint}"
@@ -91,18 +68,15 @@ async def waqi_get(endpoint: str, params: dict | None = None) -> dict:
             data = resp.json()
 
             if data.get("status") != "ok":
-                stats.api_error_count += 1
                 msg = data.get("data", "Unknown WAQI error")
                 raise HTTPException(status_code=502, detail=f"WAQI error: {msg}")
             return data
         except httpx.HTTPStatusError as exc:
-            stats.api_error_count += 1
             raise HTTPException(
                 status_code=502,
                 detail=f"WAQI returned {exc.response.status_code}: {exc.response.text[:200]}",
             )
         except httpx.RequestError as exc:
-            stats.api_error_count += 1
             raise HTTPException(status_code=503, detail=f"WAQI unreachable: {exc}")
 
 # ---------------------------------------------------------------------------
@@ -173,12 +147,10 @@ async def discover_thailand() -> list[dict]:
 
     cache_set(_discovery_cache, "thailand_stations", stations)
     _discovered_stations = stations
-    print(f"[discovery] WAQI Thailand complete: {len(stations)} stations")
     return stations
 
 async def _background_discovery():
     try:
-        print("[discovery] Starting WAQI background discovery...")
         await discover_thailand()
     except Exception as exc:
         print(f"[discovery] background discovery failed: {exc}")
@@ -210,7 +182,6 @@ async def fetch_station_data(uid: int) -> dict | None:
     city_info = d.get("city", {})
     name = city_info.get("name", "Unknown")
     geo = city_info.get("geo", [None, None])
-    # WAQI geo format: [lat, lon]
     lat = geo[0] if geo else None
     lon = geo[1] if len(geo) > 1 else None
 
@@ -219,9 +190,7 @@ async def fetch_station_data(uid: int) -> dict | None:
     if isinstance(iaqi.get("pm25"), dict):
         pm25_aqi = iaqi["pm25"].get("v")
 
-    # WAQI iaqi.pm25.v is AQI-US; convert to µg/m³
     pm25 = aqi_us_to_pm25_approx(pm25_aqi) if pm25_aqi is not None else None
-
     ts = d.get("time", {}).get("iso")
 
     result = {
@@ -239,18 +208,14 @@ async def fetch_station_data(uid: int) -> dict | None:
     return result
 
 # ---------------------------------------------------------------------------
-# Lifespan
+# Lifespan & App Init
 # ---------------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("[lifespan] Starting up...")
     if WAQI_TOKEN:
         start_discovery()
-    else:
-        print("[lifespan] WARNING: WAQI_API_TOKEN not set, skipping discovery")
     yield
-    print("[lifespan] Shutting down...")
 
 app = FastAPI(
     title="Thailand PM2.5 Monitor — API",
@@ -267,25 +232,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------------------------------------------------------------------
-# Middleware
-# ---------------------------------------------------------------------------
-
-@app.middleware("http")
-async def track_requests(request: Request, call_next):
-    path = request.url.path
-    stats.request_count[path] += 1
-    stats.active_requests += 1
-    try:
-        response = await call_next(request)
-        if response.status_code >= 400:
-            stats.error_count[path] += 1
-        return response
-    except Exception:
-        stats.error_count[path] += 1
-        raise
-    finally:
-        stats.active_requests -= 1
+# ─── เปิดใช้งาน Prometheus Instrumentator ─────────────────────────────────────
+# ตัวนี้จะสร้าง Endpoint /metrics ให้เราแบบอัตโนมัติ 
+# และเก็บข้อมูล request counts, latency, status codes ให้ครบถ้วน
+Instrumentator().instrument(app).expose(app)
+# ─────────────────────────────────────────────────────────────────────────────
 
 # ---------------------------------------------------------------------------
 # API routes
@@ -370,7 +321,7 @@ async def trigger_discovery():
     }
 
 # ---------------------------------------------------------------------------
-# Database (unchanged)
+# Database
 # ---------------------------------------------------------------------------
 
 def get_db_connection():
@@ -400,7 +351,6 @@ def add_favorite(fav: FavoriteRequest):
         conn.close()
         return {"status": "success", "message": f"Saved {fav.station_name} to database"}
     except Exception as e:
-        stats.error_count["/api/favorites"] += 1
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/favorites", summary="Get favorite stations from Database")
@@ -421,72 +371,7 @@ def get_favorites():
         ]
         return {"favorites": result}
     except Exception as e:
-        stats.error_count["/api/favorites"] += 1
         raise HTTPException(status_code=500, detail=str(e))
-
-# ---------------------------------------------------------------------------
-# Prometheus metrics
-# ---------------------------------------------------------------------------
-
-@app.get("/metrics", response_class=PlainTextResponse, include_in_schema=False)
-async def metrics():
-    uptime = time.time() - stats.start_time
-    lines: list[str] = [
-        "# HELP pm25_monitor_uptime_seconds Seconds since the process started",
-        "# TYPE pm25_monitor_uptime_seconds gauge",
-        f"pm25_monitor_uptime_seconds {uptime:.2f}",
-        "",
-        "# HELP pm25_monitor_requests_total Total HTTP requests by endpoint",
-        "# TYPE pm25_monitor_requests_total counter",
-        *[
-            f'pm25_monitor_requests_total{{endpoint="{ep.replace(chr(34), chr(92)+chr(34))}"}} {n}'
-            for ep, n in stats.request_count.items()
-        ],
-        "",
-        "# HELP pm25_monitor_errors_total HTTP 4xx/5xx responses by endpoint",
-        "# TYPE pm25_monitor_errors_total counter",
-        *[
-            f'pm25_monitor_errors_total{{endpoint="{ep.replace(chr(34), chr(92)+chr(34))}"}} {n}'
-            for ep, n in stats.error_count.items()
-        ],
-        "",
-        "# HELP pm25_monitor_cache_hits_total In-memory cache hits",
-        "# TYPE pm25_monitor_cache_hits_total counter",
-        f"pm25_monitor_cache_hits_total {stats.cache_hits}",
-        "",
-        "# HELP pm25_monitor_cache_misses_total In-memory cache misses",
-        "# TYPE pm25_monitor_cache_misses_total counter",
-        f"pm25_monitor_cache_misses_total {stats.cache_misses}",
-        "",
-        "# HELP pm25_monitor_api_fetches_total Upstream WAQI API requests attempted",
-        "# TYPE pm25_monitor_api_fetches_total counter",
-        f"pm25_monitor_api_fetches_total {stats.api_fetch_count}",
-        "",
-        "# HELP pm25_monitor_api_errors_total Upstream WAQI API request failures",
-        "# TYPE pm25_monitor_api_errors_total counter",
-        f"pm25_monitor_api_errors_total {stats.api_error_count}",
-        "",
-        "# HELP pm25_monitor_active_requests In-flight HTTP requests (gauge)",
-        "# TYPE pm25_monitor_active_requests gauge",
-        f"pm25_monitor_active_requests {stats.active_requests}",
-        "",
-        "# HELP pm25_monitor_cache_entries Keys currently held in memory cache",
-        "# TYPE pm25_monitor_cache_entries gauge",
-        f"pm25_monitor_cache_entries {len(_data_cache) + len(_discovery_cache)}",
-        "",
-        "# HELP pm25_monitor_discovered_cities Stations known in the discovery list",
-        "# TYPE pm25_monitor_discovered_cities gauge",
-        f"pm25_monitor_discovered_cities {len(_discovered_stations)}",
-        "",
-        "# HELP pm25_monitor_last_api_fetch_timestamp_seconds Unix timestamp of last successful upstream fetch",
-        "# TYPE pm25_monitor_last_api_fetch_timestamp_seconds gauge",
-        *[
-            f'pm25_monitor_last_api_fetch_timestamp_seconds{{cache_key="{k}"}} {ts:.3f}'
-            for k, ts in stats.last_api_fetch.items()
-        ],
-        "",
-    ]
-    return "\n".join(lines)
 
 # ---------------------------------------------------------------------------
 # Health
@@ -496,9 +381,6 @@ async def metrics():
 async def health():
     return {
         "status": "ok",
-        "uptime_seconds": round(time.time() - stats.start_time, 1),
         "cache_entries": len(_data_cache) + len(_discovery_cache),
         "discovered_stations": len(_discovered_stations),
-        "cache_ttl_data": CACHE_TTL_DATA,
-        "cache_ttl_discovery": CACHE_TTL_DISCOVERY,
     }
