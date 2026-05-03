@@ -3,7 +3,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pm25-backend
+  namespace: jenkins
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: backend
@@ -24,7 +26,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pm25-frontend
+  namespace: jenkins
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: frontend
@@ -42,6 +46,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pm25-prometheus
+  namespace: jenkins
 spec:
   selector:
     matchLabels:
