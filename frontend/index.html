@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Thailand PM2.5 Monitor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌫️</text></svg>" />
+<title>ติดตาม PM2.5 ประเทศไทย</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 :root {
-  --topbar-h:   52px;
-  --stats-h:    88px;
-  --footer-h:   36px;
-  --rankings-h: 210px;
-  --sidebar-w:  300px;
+  --topbar-h:  52px;
+  --stats-h:   88px;
+  --footer-h:  36px;
+  --sidebar-w: 300px;
 
   --bg:          #f2f4f7;
   --white:       #ffffff;
@@ -32,7 +32,7 @@
   --danger:      #d63f3f;
 
   --serif: 'DM Serif Display', Georgia, serif;
-  --sans:  'DM Sans', system-ui, sans-serif;
+  --sans:  'Sarabun', system-ui, sans-serif;
   --mono:  'DM Mono', 'Courier New', monospace;
 
   --radius:    10px;
@@ -51,768 +51,352 @@ body {
   height: 100vh;
 }
 
-#map {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-}
-
+/* ── Map ── */
+#map { position: fixed; inset: 0; z-index: 0; }
 .leaflet-container { background: #e8ecf0; }
 .leaflet-tile { filter: saturate(0.1) brightness(1.06) contrast(0.94); }
+.leaflet-tooltip {
+  font-family: var(--sans); font-size: 0.78rem;
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);
+  padding: 0.4rem 0.65rem; pointer-events: none;
+  color: var(--text);
+}
 
+/* ── Topbar ── */
 .topbar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 400;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 400;
   height: var(--topbar-h);
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
+  background: var(--white); border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  padding: 0 1.5rem;
-  gap: 1rem;
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; padding: 0 1.25rem; gap: 1rem;
 }
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+.topbar-left { display: flex; align-items: center; gap: 0.5rem; }
 
 .live-chip {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 0.05em;
-  color: var(--ok);
-  background: #f0faf5;
-  border: 1px solid #c0e8d0;
-  padding: 0.22rem 0.6rem;
-  border-radius: 999px;
+  display: flex; align-items: center; gap: 0.375rem;
+  font-family: var(--mono); font-size: 0.6rem; font-weight: 500;
+  letter-spacing: 0.05em; color: var(--ok);
+  background: #f0faf5; border: 1px solid #c0e8d0;
+  padding: 0.22rem 0.6rem; border-radius: 999px;
 }
-
 .live-chip-dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--ok);
-  animation: blink 2.5s ease-in-out infinite;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--ok); animation: blink 2.5s ease-in-out infinite;
 }
-
 .live-chip.offline { color: var(--danger); background: #fef2f2; border-color: #f9c5c5; }
 .live-chip.offline .live-chip-dot { background: var(--danger); animation: none; }
+#last-update { font-size: 0.65rem; color: var(--text-muted); }
 
-#last-update {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-}
-
-.topbar-center {
-  text-align: center;
-  line-height: 1;
-}
-
+.topbar-center { text-align: center; line-height: 1.25; }
 .topbar-eyebrow {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  letter-spacing: 0.04em;
-  display: block;
-  margin-bottom: 2px;
+  font-family: var(--serif); font-style: italic;
+  font-size: 0.6rem; color: var(--text-muted);
+  letter-spacing: 0.04em; display: block; margin-bottom: 2px;
 }
+.topbar-title { font-family: var(--serif); font-size: 1.05rem; color: var(--text); }
 
-.topbar-title {
-  font-family: var(--serif);
-  font-size: 1.05rem;
-  color: var(--text);
-  letter-spacing: 0.01em;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.375rem;
-}
+.topbar-right { display: flex; align-items: center; justify-content: flex-end; gap: 0.375rem; }
 
 .icon-btn {
-  width: 32px; height: 32px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--white);
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: all 0.16s ease;
+  height: 32px; min-width: 32px;
+  border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--white); color: var(--text-dim);
+  font-size: 0.75rem; font-family: var(--sans);
+  display: flex; align-items: center; justify-content: center; gap: 0.3rem;
+  padding: 0 0.65rem; cursor: pointer; transition: all 0.16s ease; white-space: nowrap;
 }
-
-.icon-btn:hover {
-  background: var(--bg);
-  border-color: var(--border-hi);
-  color: var(--text);
-}
-
+.icon-btn:hover { background: var(--bg); border-color: var(--border-hi); color: var(--text); }
 .icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
 .icon-btn.accent-btn {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--accent); border-color: var(--accent); color: #fff;
   box-shadow: 0 2px 6px rgba(224,92,75,0.25);
 }
-
-.icon-btn.accent-btn:hover {
-  background: #c9503f;
-  border-color: #c9503f;
+.icon-btn.accent-btn:hover { background: #c9503f; border-color: #c9503f; }
+.icon-btn.active-btn {
+  background: var(--accent2); border-color: var(--accent2); color: #fff;
+  box-shadow: 0 2px 6px rgba(45,125,210,0.28);
 }
 
+/* ── Stats bar ── */
 .stats-bar {
-  position: fixed;
-  top: var(--topbar-h);
-  left: 0; right: 0;
-  z-index: 300;
-  height: var(--stats-h); 
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+  position: fixed; top: var(--topbar-h); left: 0; right: 0; z-index: 300;
+  height: var(--stats-h);
+  display: grid; grid-template-columns: repeat(4,1fr);
+  background: var(--white); border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm);
 }
-
 .stat-cell {
-  padding: 14px 1.75rem;   
-  border-right: 1px solid var(--border);
-  transition: background 0.15s;
+  padding: 14px 1.75rem; border-right: 1px solid var(--border); transition: background 0.15s;
 }
-
 .stat-cell:last-child { border-right: none; }
 .stat-cell:hover { background: var(--bg); }
+.stat-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; line-height: 1; }
+.stat-num { font-family: var(--serif); font-size: 1.85rem; line-height: 1; color: var(--text); }
+.stat-note { font-size: 0.62rem; color: var(--text-muted); margin-top: 4px; line-height: 1; }
 
-.stat-label {
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 5px;       
-  line-height: 1;
-}
-
-.stat-num {
-  font-family: var(--serif);
-  font-size: 1.85rem;
-  line-height: 1;
-  color: var(--text);
-}
-
-.stat-note {
-  font-size: 0.62rem;
-  color: var(--text-muted);
-  margin-top: 4px;               
-  line-height: 1;
-}
-
+/* ── Sidebar ── */
 .sidebar {
   position: fixed;
-  top: calc(var(--topbar-h) + var(--stats-h));
-  left: 0;
-  bottom: var(--footer-h);
-  width: var(--sidebar-w);
-  z-index: 200;
-  background: var(--white);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
+  top: calc(var(--topbar-h) + var(--stats-h)); left: 0; bottom: var(--footer-h);
+  width: var(--sidebar-w); z-index: 200;
+  background: var(--white); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
 }
-
-.sidebar.collapsed {
-  transform: translateX(calc(-1 * var(--sidebar-w) + 32px));
-}
+.sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar-w) + 32px)); }
 
 .sidebar-toggle {
-  position: absolute;
-  top: 50%;
-  right: -1px;
-  transform: translateY(-50%);
-  z-index: 10;
-  width: 20px;
-  height: 48px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-left: none;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 0.55rem;
-  box-shadow: 2px 0 6px rgba(0,0,0,0.05);
-  transition: background 0.15s, color 0.15s;
+  position: absolute; top: 50%; right: -1px; transform: translateY(-50%); z-index: 10;
+  width: 20px; height: 48px;
+  background: var(--white); border: 1px solid var(--border);
+  border-left: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  display: grid; place-items: center; cursor: pointer;
+  color: var(--text-muted); font-size: 0.55rem;
+  box-shadow: 2px 0 6px rgba(0,0,0,0.05); transition: background 0.15s, color 0.15s;
 }
-
 .sidebar-toggle:hover { background: var(--bg); color: var(--text); }
-
-.toggle-arrow {
-  display: inline-block;
-  transition: transform 0.3s ease;
-}
-
+.toggle-arrow { display: inline-block; transition: transform 0.3s ease; }
 .sidebar.collapsed .toggle-arrow { transform: rotate(180deg); }
-
-.sidebar-inner {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
+.sidebar-inner { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .sidebar.collapsed .sidebar-inner { visibility: hidden; }
 
 .sidebar-head {
-  padding: 0.875rem 1.2rem;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
+  padding: 0.875rem 1.2rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
 }
-
-.sidebar-title {
-  font-family: var(--serif);
-  font-size: 0.9rem;
-  color: var(--text);
-}
-
+.sidebar-title { font-family: var(--serif); font-size: 0.9rem; color: var(--text); }
 .count-pill {
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: 1px solid rgba(224,92,75,0.18);
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
+  font-family: var(--mono); font-size: 0.6rem;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid rgba(224,92,75,0.18); padding: 0.15rem 0.5rem; border-radius: 999px;
 }
 
-.search-wrap {
-  padding: 0.625rem 0.875rem;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
+.search-wrap { padding: 0.625rem 0.875rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .search-wrap input {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 0.78rem;
-  padding: 0.45rem 0.8rem;
-  outline: none;
-  transition: border-color 0.18s, background 0.18s;
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); font-family: var(--sans); font-size: 0.82rem;
+  padding: 0.45rem 0.8rem; outline: none; transition: border-color 0.18s, background 0.18s;
 }
-
 .search-wrap input::placeholder { color: var(--text-muted); }
 .search-wrap input:focus {
-  border-color: rgba(224,92,75,0.5);
-  background: var(--white);
+  border-color: rgba(224,92,75,0.5); background: var(--white);
   box-shadow: 0 0 0 3px rgba(224,92,75,0.08);
 }
 
-.rankings-footer {
-  background: var(--white);
-  border-top: 1px solid var(--border);
-  padding: 1rem 1.5rem 1.25rem;
-  pointer-events: all;
-}
-
-.rankings-heading {
-  font-family: var(--serif);
-  font-size: 0.9rem;
-  color: var(--text);
-  letter-spacing: 0.02em;
-  margin-bottom: 0.5rem;
-}
-
-.rankings-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.ranking-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 0.6rem;
-  margin-bottom: 0.5rem;
-}
-
-.ranking-card:last-child { margin-bottom: 0; }
-
-.ranking-title {
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 0.35rem;
-}
-
-.ranking-item {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.7rem;
-  padding: 0.2rem 0;
-  border-bottom: 1px dashed var(--border);
-  cursor: pointer;
-}
-
-.ranking-item:last-child { border-bottom: none; }
-
-.ranking-name {
-  max-width: 165px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text);
-}
-
-.ranking-pm {
-  font-family: var(--mono);
-  color: var(--text-dim);
-  flex-shrink: 0;
-}
-
-.ranking-empty {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  padding: 0.25rem 0;
-}
-
-.sidebar-scroll {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.sidebar-scroll::-webkit-scrollbar { width: 3px; }
-.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-.sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-
+.sidebar-scroll { flex: 1; overflow-y: auto; }
 .station-list { padding-bottom: 0.75rem; }
 
 .station-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.72rem 1.2rem;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background 0.14s;
-  animation: fadeUp 0.22s ease forwards;
-  opacity: 0;
-  gap: 0.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.72rem 1.2rem; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.14s;
+  animation: fadeUp 0.22s ease forwards; opacity: 0; gap: 0.5rem;
 }
-
 .station-row:hover { background: var(--bg); }
-
 .station-row.active {
-  background: var(--accent-soft);
-  border-left: 2.5px solid var(--accent);
+  background: var(--accent-soft); border-left: 2.5px solid var(--accent);
   padding-left: calc(1.2rem - 2.5px);
 }
+.stn-name { font-size: 0.8rem; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 175px; }
+.stn-city { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+.stn-pm { font-family: var(--mono); font-size: 0.95rem; font-weight: 500; text-align: right; }
+.stn-label { font-size: 0.62rem; text-align: right; margin-top: 2px; }
+.no-data { padding: 2rem 1.2rem; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
 
-.stn-name {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 175px;
-}
-
-.stn-city {
-  font-size: 0.62rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.stn-pm {
-  font-family: var(--mono);
-  font-size: 0.95rem;
-  font-weight: 500;
-  text-align: right;
-}
-
-.stn-label {
-  font-size: 0.58rem;
-  text-align: right;
-  margin-top: 2px;
-  color: var(--text-muted);
-}
-
-.no-data {
-  padding: 2rem 1.2rem;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-
+/* ── Detail Panel ── */
 .detail-panel {
-  position: fixed;
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: var(--footer-h);
-  z-index: 250;
-  background: var(--white);
-  border-top: 1px solid var(--border);
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.07);
-  padding: 1.5rem 2.25rem;
-  transform: translateY(100%);
-  transition: transform 0.34s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 230px;
+  position: fixed; left: var(--sidebar-w); right: 0; bottom: var(--footer-h);
+  z-index: 250; background: var(--white); border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.07); padding: 1.25rem 2rem;
+  transform: translateY(100%); transition: transform 0.34s cubic-bezier(0.4,0,0.2,1);
+  min-height: 200px;
 }
-
 .detail-panel.open { transform: translateY(0); }
+.sidebar.collapsed ~ .detail-panel { left: 32px; }
+.sidebar.collapsed ~ .right-scroll-area { left: 32px; }
 
-.sidebar.collapsed ~ .detail-panel {
-  left: 32px;
-}
-
+/* เลย์เอาต์แผงกราฟด้านล่าง */
 .detail-grid {
-  display: grid;
-  grid-template-columns: 150px 1fr 1.8fr;
-  gap: 2.25rem;
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: flex-start;
+  width: 100%;
 }
+.detail-grid > div:nth-child(1) { flex-shrink: 0; min-width: 120px; }
+.detail-grid > div:nth-child(2) { flex: 1; min-width: 250px; }
+.detail-grid > div:nth-child(3) { flex-shrink: 0; width: 320px; transform: translate(-250px, -10px); }
 
-.detail-pm {
-  font-family: var(--serif);
-  font-size: 3.75rem;
-  line-height: 1;
-  color: var(--text);
-}
-
-.detail-unit {
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-top: 0.3rem;
-}
-
-.detail-name {
-  font-family: var(--serif);
-  font-size: 1.15rem;
-  color: var(--text);
-  margin-bottom: 0.2rem;
-}
-
-.detail-city {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  margin-bottom: 0.625rem;
-}
-
-.aqi-tag {
-  display: inline-block;
-  font-size: 0.67rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 0.22rem 0.7rem;
-  border-radius: 999px;
-}
-
-.detail-time {
-  font-size: 0.62rem;
-  color: var(--text-muted);
-  margin-top: 0.4rem;
-}
-
+.detail-pm { font-family: var(--serif); font-size: 3.2rem; line-height: 1; }
+.detail-unit { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); margin-top: 0.3rem; }
+.detail-name { font-family: var(--serif); font-size: 1.05rem; color: var(--text); margin-bottom: 0.2rem; }
+.detail-city { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.625rem; }
+.aqi-tag { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.22rem 0.7rem; border-radius: 999px; }
+.detail-time { font-size: 0.62rem; color: var(--text-muted); margin-top: 0.4rem; }
 .detail-actions { margin-top: 0.6rem; }
-
 .save-btn {
-  font-family: var(--sans);
-  font-size: 0.72rem;
-  font-weight: 500;
-  padding: 0.35rem 0.875rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(39,169,108,0.35);
-  background: transparent;
-  color: var(--ok);
-  cursor: pointer;
-  transition: all 0.16s;
+  font-family: var(--sans); font-size: 0.78rem; font-weight: 500;
+  padding: 0.35rem 0.875rem; border-radius: var(--radius-sm);
+  border: 1px solid rgba(39,169,108,0.35); background: transparent; color: var(--ok);
+  cursor: pointer; transition: all 0.16s;
 }
-
 .save-btn:hover { background: #f0faf5; border-color: var(--ok); }
 
-.chart-label {
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
-}
-
-.chart-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 68px;
-}
-
-.chart-bar {
-  flex: 1;
-  min-width: 4px;
-  border-radius: 3px 3px 0 0;
-  opacity: 0.72;
-  cursor: default;
-  position: relative;
-  transition: opacity 0.14s;
-}
-
+.chart-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; }
+.chart-bars { display: block; width: 100%; }
+.chart-bar { flex: 1; min-width: 4px; border-radius: 3px 3px 0 0; opacity: 0.72; cursor: default; position: relative; transition: opacity 0.14s; }
 .chart-bar:hover { opacity: 1; }
-
 .chart-bar:hover::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 5px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--text);
-  color: var(--white);
-  font-family: var(--mono);
-  font-size: 0.57rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 5px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 10;
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 5px); left: 50%;
+  transform: translateX(-50%); background: var(--text); color: var(--white);
+  font-family: var(--mono); font-size: 0.57rem; padding: 0.25rem 0.5rem;
+  border-radius: 5px; white-space: nowrap; pointer-events: none; z-index: 10;
 }
-
 .close-btn {
-  position: absolute;
-  top: 1.1rem;
-  right: 1.25rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.15s;
+  position: absolute; top: 1.1rem; right: 1.25rem;
+  background: var(--bg); border: 1px solid var(--border); color: var(--text-dim);
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 0.85rem; cursor: pointer; transition: all 0.15s;
 }
+.close-btn:hover { background: var(--accent-soft); border-color: rgba(224,92,75,0.3); color: var(--accent); }
 
-.close-btn:hover {
-  background: var(--accent-soft);
-  border-color: rgba(224,92,75,0.3);
-  color: var(--accent);
-}
-
-.footer-bar {
+/* ── Right scroll area ── */
+.right-scroll-area {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 300;
-  height: var(--footer-h);
-  background: var(--white);
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  font-size: 0.6rem;
-  color: var(--text-muted);
+  top: calc(var(--topbar-h) + var(--stats-h));
+  left: var(--sidebar-w); right: 0; bottom: var(--footer-h);
+  overflow-y: auto; z-index: 50;
+  pointer-events: none; scroll-behavior: smooth;
+  transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 
+.map-scroll-spacer {
+  height: calc(100vh - var(--topbar-h) - var(--stats-h) - var(--footer-h));
+  pointer-events: none; position: relative;
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 1.5rem;
+}
+.scroll-hint {
+  pointer-events: all; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;
+  animation: hintBounce 2.2s ease-in-out infinite;
+  background: rgba(255,255,255,0.88); backdrop-filter: blur(6px);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 0.38rem 0.9rem; box-shadow: var(--shadow-sm); transition: opacity 0.3s;
+}
+.scroll-hint-text { font-size: 0.68rem; font-weight: 600; color: var(--text-dim); }
+.scroll-hint-arrow { font-size: 0.65rem; color: var(--accent); }
+
+/* ── Rankings section ── */
+.rankings-footer {
+  background: var(--white); border-top: 2px solid var(--border);
+  padding: 1.1rem 1.5rem 1.75rem; pointer-events: all;
+}
+.rankings-heading {
+  font-family: var(--serif); font-size: 1rem; color: var(--text);
+  margin-bottom: 0.75rem; display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap;
+}
+.rankings-sub { font-size: 0.65rem; color: var(--text-muted); font-family: var(--sans); font-weight: 400; }
+.rankings-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; }
+
+.ranking-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem 0.875rem; }
+.ranking-title { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; }
+.ranking-item {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.75rem; padding: 0.22rem 0;
+  border-bottom: 1px dashed var(--border); cursor: pointer; transition: color 0.12s;
+}
+.ranking-item:hover { color: var(--accent); }
+.ranking-item:last-child { border-bottom: none; }
+.ranking-num { font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted); width: 18px; flex-shrink: 0; }
+.ranking-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ranking-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ranking-pm { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); flex-shrink: 0; }
+.ranking-empty { font-size: 0.75rem; color: var(--text-muted); padding: 0.5rem 0; }
+
+/* Province color legend */
+.province-legend {
+  margin-top: 1.1rem; padding-top: 0.875rem; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+}
+.province-legend-title { font-size: 0.6rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-right: 0.2rem; }
+.prov-chip { display: flex; align-items: center; gap: 0.3rem; font-size: 0.65rem; color: var(--text-dim); }
+.prov-swatch { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+
+/* ── Footer ── */
+.footer-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+  height: var(--footer-h); background: var(--white); border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.5rem; font-size: 0.6rem; color: var(--text-muted);
+}
 .footer-bar a { color: var(--text-muted); text-decoration: none; transition: color 0.14s; }
 .footer-bar a:hover { color: var(--accent); }
-
 .legend { display: flex; align-items: center; gap: 0.875rem; }
 .legend-item { display: flex; align-items: center; gap: 0.3rem; font-weight: 500; }
 .legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
+/* ── Loading ── */
 .loading-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: var(--white);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  transition: opacity 0.5s ease;
+  position: fixed; inset: 0; z-index: 9999; background: var(--white);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1.25rem; transition: opacity 0.5s ease;
 }
-
 .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loader-ring { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--border); border-top-color: var(--accent); animation: spin 0.85s linear infinite; }
+.loading-title { font-family: var(--serif); font-size: 1.25rem; color: var(--text); }
+.loading-sub { font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.07em; text-transform: uppercase; margin-top: -0.625rem; }
 
-.loader-ring {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  border-top-color: var(--accent);
-  animation: spin 0.85s linear infinite;
-}
-
-.loading-title {
-  font-family: var(--serif);
-  font-size: 1.25rem;
-  color: var(--text);
-}
-
-.loading-sub {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  margin-top: -0.625rem;
-}
-
+/* ── Toast ── */
 .toast {
-  position: fixed;
-  bottom: calc(var(--footer-h) + 1rem);
-  right: 1.25rem;
-  z-index: 9000;
-  background: var(--text);
-  color: var(--white);
-  font-size: 0.73rem;
-  padding: 0.7rem 1.1rem;
-  border-radius: var(--radius-sm);
-  max-width: 280px;
-  box-shadow: var(--shadow-md);
-  transform: translateY(120%);
-  opacity: 0;
+  position: fixed; bottom: calc(var(--footer-h) + 1rem); right: 1.25rem; z-index: 9000;
+  background: var(--text); color: var(--white); font-size: 0.78rem;
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm); max-width: 300px;
+  box-shadow: var(--shadow-md); transform: translateY(120%); opacity: 0;
   transition: transform 0.28s ease, opacity 0.28s ease;
 }
-
 .toast.show { transform: translateY(0); opacity: 1; }
 
-.leaflet-control-zoom a {
-  font-family: var(--sans);
-  background: var(--white) !important;
-  border-color: var(--border) !important;
-  color: var(--text-dim) !important;
-}
+/* ── Leaflet overrides ── */
+.leaflet-control-zoom a { font-family: var(--sans) !important; background: var(--white) !important; border-color: var(--border) !important; color: var(--text-dim) !important; }
+.leaflet-control-zoom a:hover { background: var(--bg) !important; color: var(--accent) !important; }
+.leaflet-control-attribution { font-family: var(--sans); font-size: 0.58rem !important; background: rgba(255,255,255,0.85) !important; }
 
-.leaflet-control-zoom a:hover {
-  background: var(--bg) !important;
-  color: var(--accent) !important;
-}
+/* ── Animations ── */
+@keyframes spin       { to { transform: rotate(360deg); } }
+@keyframes blink      { 0%,100%{opacity:1} 50%{opacity:0.25} }
+@keyframes fadeUp     { from{opacity:0;transform:translateY(7px)} to{opacity:1;transform:translateY(0)} }
+@keyframes hintBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
 
-.leaflet-control-attribution {
-  font-family: var(--sans);
-  font-size: 0.58rem !important;
-  background: rgba(255,255,255,0.85) !important;
-}
-
-/* === Right-side scroll container === */
-.right-scroll-area {
-  position: fixed;
-  top: calc(var(--topbar-h) + var(--stats-h));
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: var(--footer-h);
-  overflow-y: auto;
-  z-index: 50;
-  pointer-events: none; /* map clicks pass through spacer */
-  scroll-behavior: smooth;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar.collapsed ~ .right-scroll-area {
-  left: 32px;
-}
-
-.right-scroll-area::-webkit-scrollbar { width: 4px; }
-.right-scroll-area::-webkit-scrollbar-track { background: transparent; }
-.right-scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-
-/* Transparent spacer = the map viewport area */
-.map-scroll-spacer {
-  height: calc(100vh - var(--topbar-h) - var(--stats-h) - var(--footer-h));
-  pointer-events: none;
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 1.5rem;
-}
-
-/* Scroll hint arrow */
-.scroll-hint {
-  pointer-events: all;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  cursor: pointer;
-  animation: hintBounce 2.2s ease-in-out infinite;
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(6px);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.4rem 1rem 0.4rem 0.9rem;
-  box-shadow: var(--shadow-sm);
-  gap: 0.45rem;
-  flex-direction: row;
-}
-
-.scroll-hint-text {
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-
-.scroll-hint-arrow {
-  font-size: 0.7rem;
-  color: var(--accent);
-}
-
-@keyframes hintBounce {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(6px); }
-}
-
-@keyframes spin   { to { transform: rotate(360deg); } }
-@keyframes blink  { 0%,100%{opacity:1}50%{opacity:0.25} }
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(7px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-
+/* ── Responsive ── */
 @media (max-width: 768px) {
   :root { --sidebar-w: 100vw; }
-  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .stats-bar { grid-template-columns: repeat(2,1fr); }
   .topbar-eyebrow { display: none; }
   #last-update { display: none; }
   .detail-panel { left: 0; }
-  .detail-grid { grid-template-columns: 1fr; gap: 1rem; max-height: 50vh; overflow-y: auto; }
+  .detail-grid { flex-direction: column; gap: 1.5rem; max-height: 50vh; overflow-y: auto; }
+  .detail-grid > div:nth-child(3) { width: 100%; }
   .right-scroll-area { left: 0; }
-  .rankings-footer { padding: 0.8rem 1rem; }
   .rankings-grid { grid-template-columns: 1fr; }
+  .rankings-footer { padding: 0.875rem 1rem 1.25rem; }
+  .icon-btn span.btn-label { display: none; }
+}
+
+/* === ซ่อน Scrollbar === */
+.chart-bars::-webkit-scrollbar,
+.sidebar-scroll::-webkit-scrollbar,
+.right-scroll-area::-webkit-scrollbar {
+  display: none;
+}
+.chart-bars,
+.sidebar-scroll,
+.right-scroll-area {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -820,145 +404,157 @@ body {
 
 <div class="loading-overlay" id="loading">
   <div class="loader-ring"></div>
-  <div class="loading-title">Thailand PM₂.₅</div>
-  <div class="loading-sub">Fetching sensor data…</div>
+  <div class="loading-title">PM₂.₅ ประเทศไทย</div>
+  <div class="loading-sub">กำลังโหลดข้อมูลสถานี…</div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<!-- ── Topbar ── -->
 <div class="topbar">
-
   <div class="topbar-left">
     <div class="live-chip" id="live-dot">
       <div class="live-chip-dot"></div>
-      Live
+      สด
     </div>
     <span id="last-update"></span>
   </div>
 
   <div class="topbar-center">
-    <span class="topbar-eyebrow">— Real-Time Particulate Surveillance —</span>
-    <div class="topbar-title">Thailand Air Quality</div>
+    <span class="topbar-eyebrow">— ระบบติดตามอากาศแบบเรียลไทม์ —</span>
+    <div class="topbar-title">คุณภาพอากาศ PM2.5 ประเทศไทย</div>
   </div>
 
   <div class="topbar-right">
-    <button class="icon-btn" title="Favorites" onclick="showFavorites()">⭐</button>
-    <button class="icon-btn accent-btn" id="refresh-btn" title="Refresh" onclick="refreshData()">↺</button>
+    <button class="icon-btn" id="province-btn" onclick="toggleProvinceLayer()">
+      🗺 <span class="btn-label"></span>
+    </button>
+    <button class="icon-btn" title="สถานีโปรด" onclick="showFavorites()">รายการโปรด</button>
+    <button class="icon-btn accent-btn" id="refresh-btn" title="รีเฟรช" onclick="refreshData()">รีเฟรช</button>
   </div>
-
 </div>
 
+<!-- ── Stats bar ── -->
 <div class="stats-bar">
   <div class="stat-cell">
-    <div class="stat-label">Stations Online</div>
+    <div class="stat-label">สถานีออนไลน์</div>
     <div class="stat-num" id="stat-stations" style="color:var(--accent2)">—</div>
-    <div class="stat-note">with PM2.5 data</div>
+    <div class="stat-note">มีข้อมูล PM2.5</div>
   </div>
   <div class="stat-cell">
-    <div class="stat-label">National Average</div>
+    <div class="stat-label">ค่าเฉลี่ยทั่วประเทศ</div>
     <div class="stat-num" id="stat-avg" style="color:var(--warn)">—</div>
     <div class="stat-note">µg/m³</div>
   </div>
   <div class="stat-cell">
-    <div class="stat-label">Highest Reading</div>
+    <div class="stat-label">ค่าสูงสุด</div>
     <div class="stat-num" id="stat-max" style="color:var(--danger)">—</div>
     <div class="stat-note" id="stat-max-name">µg/m³</div>
   </div>
   <div class="stat-cell">
-    <div class="stat-label">Lowest Reading</div>
+    <div class="stat-label">ค่าต่ำสุด</div>
     <div class="stat-num" id="stat-min" style="color:var(--ok)">—</div>
     <div class="stat-note">µg/m³</div>
   </div>
 </div>
 
+<!-- ── Sidebar ── -->
 <div class="sidebar" id="sidebar">
-
-  <div class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse / Expand">
+  <div class="sidebar-toggle" onclick="toggleSidebar()" title="ย่อ / ขยาย">
     <span class="toggle-arrow">‹</span>
   </div>
-
   <div class="sidebar-inner">
     <div class="sidebar-head">
-      <span class="sidebar-title">Monitoring Stations</span>
+      <span class="sidebar-title">สถานีตรวจวัด</span>
       <span class="count-pill" id="station-count">0</span>
     </div>
-
     <div class="search-wrap">
-      <input type="text" id="search-input" placeholder="Search station or city…" oninput="filterStations()" />
+      <input type="text" id="search-input" placeholder="ค้นหาสถานี หรือจังหวัด…" oninput="filterStations()" />
     </div>
-
     <div class="sidebar-scroll">
       <div class="station-list" id="station-list"></div>
     </div>
   </div>
 </div>
 
+<!-- ── Detail panel ── -->
 <div class="detail-panel" id="detail-drawer">
   <button class="close-btn" onclick="closeDetail()">✕</button>
-
   <div class="detail-grid">
     <div>
       <div class="detail-pm" id="detail-pm">—</div>
       <div class="detail-unit">µg/m³ · PM2.5</div>
     </div>
-
     <div>
       <div class="detail-name" id="detail-name">—</div>
       <div class="detail-city" id="detail-city">—</div>
       <span class="aqi-tag" id="detail-aqi-pill">—</span>
       <div class="detail-time" id="detail-updated">—</div>
       <div class="detail-actions">
-        <button class="save-btn" onclick="saveFavorite()">↓ Save to Favorites</button>
+        <button class="save-btn" onclick="saveFavorite()">↓ บันทึกสถานีโปรด</button>
       </div>
     </div>
-
     <div>
-      <div class="chart-label">24-Hour History</div>
+      <div class="chart-label" style="margin-top: 15px;">ค่าปัจจุบัน · พารามิเตอร์อื่น</div>
       <div class="chart-bars" id="chart-bars">
-        <span style="font-size:0.68rem;color:var(--text-muted)">Loading…</span>
+        <span style="font-size:0.68rem;color:var(--text-muted)">กำลังโหลด…</span>
       </div>
     </div>
   </div>
 </div>
 
+<!-- ── Right scroll area ── -->
 <div class="right-scroll-area" id="right-scroll-area">
-  <!-- Transparent spacer over the map -->
   <div class="map-scroll-spacer">
-    <div class="scroll-hint" onclick="document.getElementById('right-scroll-area').scrollTo({top:99999,behavior:'smooth'})">
-      <span class="scroll-hint-text">City Rankings</span>
+    <div class="scroll-hint" id="scroll-hint" onclick="document.getElementById('right-scroll-area').scrollTo({top:99999,behavior:'smooth'})">
+      <span class="scroll-hint-text">อันดับจังหวัด</span>
       <span class="scroll-hint-arrow">▼</span>
     </div>
   </div>
 
-  <!-- Rankings section (scroll down to see) -->
   <div class="rankings-footer" id="rankings-footer">
-    <div class="rankings-heading">Live City Rankings</div>
+    <div class="rankings-heading">
+      อันดับคุณภาพอากาศ
+      <span class="rankings-sub">ข้อมูล: Air4Thai · กรมควบคุมมลพิษ</span>
+    </div>
     <div class="rankings-grid">
       <div class="ranking-card">
-        <div class="ranking-title">Most Polluted Cities (Top 10)</div>
-        <div class="ranking-list" id="ranking-polluted"></div>
+        <div class="ranking-title">มลพิษสูงสุด (10 อันดับ)</div>
+        <div id="ranking-polluted"></div>
       </div>
       <div class="ranking-card">
-        <div class="ranking-title">Cleanest Cities (Top 10)</div>
-        <div class="ranking-list" id="ranking-cleanest"></div>
+        <div class="ranking-title">อากาศดีที่สุด (10 อันดับ)</div>
+        <div id="ranking-cleanest"></div>
       </div>
+    </div>
+
+    <div class="province-legend" id="province-legend" style="display:none">
+      <span class="province-legend-title">ระดับ PM2.5 ตามจังหวัด</span>
+      <div class="prov-chip"><div class="prov-swatch" style="background:#22c55e"></div>ดี (&le;12)</div>
+      <div class="prov-chip"><div class="prov-swatch" style="background:#eab308"></div>ปานกลาง (&le;35)</div>
+      <div class="prov-chip"><div class="prov-swatch" style="background:#f97316"></div>กลุ่มเสี่ยง (&le;55)</div>
+      <div class="prov-chip"><div class="prov-swatch" style="background:#ef4444"></div>ไม่ดี (&le;150)</div>
+      <div class="prov-chip"><div class="prov-swatch" style="background:#a855f7"></div>แย่มาก (&le;250)</div>
+      <div class="prov-chip"><div class="prov-swatch" style="background:#7f1d1d"></div>อันตราย</div>
+      <div class="prov-chip"><div class="prov-swatch" style="background:#cccccc"></div>ไม่มีข้อมูล</div>
     </div>
   </div>
 </div>
 
+<!-- ── Footer ── -->
 <div class="footer-bar">
   <div class="legend">
     <span style="font-weight:600;color:var(--text-dim);margin-right:0.2rem">AQI</span>
-    <div class="legend-item"><div class="legend-dot" style="background:#27a96c"></div>Good</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>Moderate</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>Sensitive</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Unhealthy</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>Very Unhealthy</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#9f1239"></div>Hazardous</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>ดี</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>ปานกลาง</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>กลุ่มเสี่ยง</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>ไม่ดี</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>แย่มาก</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7f1d1d"></div>อันตราย</div>
   </div>
   <div>
-    Data: <a href="https://waqi.info/#/c/4.436/7.769/2.3z" target="_blank">WAQI</a> ·
-    Cache 5 min ·
+    ข้อมูล: <a href="http://air4thai.pcd.go.th" target="_blank">Air4Thai · กรมควบคุมมลพิษ</a> ·
+    แคช 30 นาที ·
     <a href="/metrics" target="_blank">metrics</a> ·
     <a href="/health" target="_blank">health</a> ·
     <a href="/docs" target="_blank">docs</a>
@@ -966,32 +562,49 @@ body {
 </div>
 
 <script>
-let allLocations = [];
-let markers      = {};
-let selectedId   = null;
+/* ─────────────────────────────────
+   State
+───────────────────────────────── */
+let allLocations    = [];
+let markers         = {};
+let selectedId      = null;
 let map;
-let sidebarOpen  = true;
+let sidebarOpen     = true;
+let provinceLayer   = null;
+let provinceVisible = false;
 
-function toggleSidebar() {
-  const sb = document.getElementById('sidebar');
-  sidebarOpen = !sidebarOpen;
-  sb.classList.toggle('collapsed', !sidebarOpen);
+/* ─────────────────────────────────
+   Helpers
+───────────────────────────────── */
+function esc(s) { return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function fmtDt(s) {
+  try {
+    return new Date(s).toLocaleString('th-TH', {
+      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+    });
+  } catch { return s; }
 }
 
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+/* ─────────────────────────────────
+   Map init
+───────────────────────────────── */
 function initMap() {
   map = L.map('map', {
-    center: [13.0, 101.5],
-    zoom: 6,
-    zoomControl: false,
-    attributionControl: false,
+    center: [13.0, 101.5], zoom: 6,
+    zoomControl: false, attributionControl: false,
   });
-
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap © CartoDB',
-    subdomains: 'abcd',
-    maxZoom: 19,
+    subdomains: 'abcd', maxZoom: 19,
   }).addTo(map);
-
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(map);
 }
@@ -1000,7 +613,6 @@ function makeMarker(loc) {
   if (!loc.lat || !loc.lon) return null;
   const c  = loc.aqi.color;
   const pm = loc.pm25 !== null ? loc.pm25 : '?';
-
   const icon = L.divIcon({
     className: '',
     html: `<div style="
@@ -1013,85 +625,192 @@ function makeMarker(loc) {
       transition:transform 0.15s,box-shadow 0.15s;
     " onmouseenter="this.style.transform='scale(1.14)'"
        onmouseleave="this.style.transform='scale(1)'">${pm}</div>`,
-    iconSize:   [40, 40],
-    iconAnchor: [20, 20],
+    iconSize: [40,40], iconAnchor: [20,20],
   });
-
   return L.marker([loc.lat, loc.lon], { icon })
     .addTo(map)
     .on('click', () => selectStation(loc.id));
 }
 
+/* ─────────────────────────────────
+   Province choropleth
+───────────────────────────────── */
+const GEOJSON_URL = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
+
+function pm25ToFill(pm25) {
+  if (pm25 === null || pm25 === undefined) return '#cccccc';
+  if (pm25 <= 12.0)  return '#22c55e';
+  if (pm25 <= 35.4)  return '#eab308';
+  if (pm25 <= 55.4)  return '#f97316';
+  if (pm25 <= 150.4) return '#ef4444';
+  if (pm25 <= 250.4) return '#a855f7';
+  return '#7f1d1d';
+}
+
+function normStr(s) { return (s || '').replace(/\s+/g,'').toLowerCase(); }
+
+function getProvincePm25(provinceName) {
+  const pn = normStr(provinceName);
+  if (!pn) return null;
+  const hits = allLocations.filter(l => {
+    const a = normStr(l.areaTH || l.city || '');
+    return a && (a === pn || a.includes(pn) || pn.includes(a));
+  });
+  const vals = hits.filter(l => l.pm25 !== null).map(l => l.pm25);
+  if (!vals.length) return null;
+  return Math.round((vals.reduce((a,b) => a+b, 0) / vals.length) * 10) / 10;
+}
+
+function getPropName(props) {
+  return props.name || props.NAME || props.province_th
+      || props.NAME_TH || props.name_th || props.PROVINCE || '';
+}
+
+function styleProv(feature) {
+  const pm25 = getProvincePm25(getPropName(feature.properties));
+  return { fillColor: pm25ToFill(pm25), weight: 1, opacity: 0.6, color: '#fff', fillOpacity: 0.42 };
+}
+
+function onEachProv(feature, layer) {
+  const name = getPropName(feature.properties);
+  const pm25 = getProvincePm25(name);
+  const valStr = pm25 !== null ? `${pm25} µg/m³` : 'ไม่มีข้อมูล';
+  layer.bindTooltip(
+    `<b>${name || '—'}</b><br>PM2.5 เฉลี่ย: ${valStr}`,
+    { sticky: true, direction: 'auto' }
+  );
+  layer.on({
+    mouseover(e) { e.target.setStyle({ fillOpacity: 0.68, weight: 2 }); },
+    mouseout(e)  { provinceLayer.resetStyle(e.target); },
+    click() {
+      const pn = normStr(name);
+      const found = allLocations.find(l => {
+        const a = normStr(l.areaTH || l.city || '');
+        return a && (a === pn || a.includes(pn) || pn.includes(a));
+      });
+      if (found) selectStation(found.id);
+    },
+  });
+}
+
+async function toggleProvinceLayer() {
+  const btn    = document.getElementById('province-btn');
+  const legend = document.getElementById('province-legend');
+
+  if (provinceLayer) {
+    if (provinceVisible) {
+      map.removeLayer(provinceLayer);
+      provinceVisible = false;
+      btn.classList.remove('active-btn');
+      legend.style.display = 'none';
+    } else {
+      provinceLayer.addTo(map);
+      provinceLayer.bringToBack();
+      provinceVisible = true;
+      btn.classList.add('active-btn');
+      legend.style.display = 'flex';
+    }
+    return;
+  }
+
+  btn.innerHTML = '⏳ <span class="btn-label">กำลังโหลด…</span>';
+  btn.disabled  = true;
+  try {
+    const res     = await fetch(GEOJSON_URL);
+    const geojson = await res.json();
+    provinceLayer = L.geoJSON(geojson, { style: styleProv, onEachFeature: onEachProv });
+    provinceLayer.addTo(map);
+    provinceLayer.bringToBack();
+    provinceVisible = true;
+    btn.innerHTML   = '🗺 <span class="btn-label"></span>';
+    btn.disabled    = false;
+    btn.classList.add('active-btn');
+    legend.style.display = 'flex';
+  } catch {
+    showToast('ไม่สามารถโหลดแผนที่จังหวัดได้');
+    btn.innerHTML = '🗺 <span class="btn-label"></span>';
+    btn.disabled  = false;
+  }
+}
+
+function refreshProvinceStyles() {
+  if (provinceLayer && provinceVisible) {
+    provinceLayer.setStyle(styleProv);
+  }
+}
+
+/* ─────────────────────────────────
+   Sidebar
+───────────────────────────────── */
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  sidebarOpen = !sidebarOpen;
+  sb.classList.toggle('collapsed', !sidebarOpen);
+}
+
 function renderList(locations) {
   const q = (document.getElementById('search-input').value || '').toLowerCase();
   const filtered = locations.filter(l =>
-    l.name.toLowerCase().includes(q) || (l.city || '').toLowerCase().includes(q)
+    l.name.toLowerCase().includes(q) ||
+    (l.city  || '').toLowerCase().includes(q) ||
+    (l.areaTH || '').includes(q)
   );
-
   const el = document.getElementById('station-list');
   if (!filtered.length) {
-    el.innerHTML = '<div class="no-data">No stations match your search.</div>';
+    el.innerHTML = '<div class="no-data">ไม่พบสถานีที่ตรงกัน</div>';
     return;
   }
-
   el.innerHTML = filtered.map((loc, i) => {
     const pm    = loc.pm25 !== null ? loc.pm25 : '—';
     const color = loc.aqi.color;
-    return `
-      <div class="station-row${selectedId === loc.id ? ' active' : ''}"
-           id="row-${loc.id}"
-           onclick="selectStation(${loc.id})"
-           style="animation-delay:${i * 10}ms">
-        <div style="min-width:0">
-          <div class="stn-name">${esc(loc.name)}</div>
-          <div class="stn-city">${esc(loc.city)}</div>
-        </div>
-        <div style="flex-shrink:0">
-          <div class="stn-pm" style="color:${color}">${pm}</div>
-          <div class="stn-label" style="color:${color}">${loc.aqi.label}</div>
-        </div>
-      </div>`;
+    return `<div class="station-row${selectedId === loc.id ? ' active' : ''}"
+        id="row-${loc.id}" onclick="selectStation(${loc.id})"
+        style="animation-delay:${i*10}ms">
+      <div style="min-width:0">
+        <div class="stn-name">${esc(loc.name)}</div>
+        <div class="stn-city">${esc(loc.city)}</div>
+      </div>
+      <div style="flex-shrink:0">
+        <div class="stn-pm" style="color:${color}">${pm}</div>
+        <div class="stn-label" style="color:${color}">${esc(loc.aqi.label)}</div>
+      </div>
+    </div>`;
   }).join('');
 }
 
+/* ─────────────────────────────────
+   Rankings
+───────────────────────────────── */
 function renderRankings(locations) {
-  const pollutedEl = document.getElementById('ranking-polluted');
-  const cleanEl = document.getElementById('ranking-cleanest');
-  if (!pollutedEl || !cleanEl) return;
+  const pEl = document.getElementById('ranking-polluted');
+  const cEl = document.getElementById('ranking-cleanest');
+  if (!pEl || !cEl) return;
 
   const ranked = locations.filter(l => l.pm25 !== null);
   if (!ranked.length) {
-    pollutedEl.innerHTML = '<div class="ranking-empty">No data yet</div>';
-    cleanEl.innerHTML = '<div class="ranking-empty">No data yet</div>';
+    pEl.innerHTML = '<div class="ranking-empty">ยังไม่มีข้อมูล</div>';
+    cEl.innerHTML = '<div class="ranking-empty">ยังไม่มีข้อมูล</div>';
     return;
   }
 
-  const polluted = [...ranked]
-    .sort((a, b) => (b.pm25 || 0) - (a.pm25 || 0))
-    .slice(0, 10);
-  const cleanest = [...ranked]
-    .sort((a, b) => (a.pm25 || 0) - (b.pm25 || 0))
-    .slice(0, 10);
+  const top10dirty  = [...ranked].sort((a,b) => (b.pm25||0)-(a.pm25||0)).slice(0,10);
+  const top10clean  = [...ranked].sort((a,b) => (a.pm25||0)-(b.pm25||0)).slice(0,10);
 
-  pollutedEl.innerHTML = polluted.map((loc, i) => {
-    const pm = loc.pm25 !== null ? loc.pm25 : '—';
-    return `
-      <div class="ranking-item" onclick="selectStation(${loc.id})">
-        <span class="ranking-name">${i + 1}. ${esc(loc.name)}</span>
-        <span class="ranking-pm">${pm}</span>
-      </div>`;
-  }).join('');
+  const rowHtml = (loc, i) => `
+    <div class="ranking-item" onclick="selectStation(${loc.id})">
+      <span class="ranking-num">${i+1}.</span>
+      <span class="ranking-name">${esc(loc.name)}</span>
+      <div class="ranking-dot" style="background:${loc.aqi.color}"></div>
+      <span class="ranking-pm">${loc.pm25} µg/m³</span>
+    </div>`;
 
-  cleanEl.innerHTML = cleanest.map((loc, i) => {
-    const pm = loc.pm25 !== null ? loc.pm25 : '—';
-    return `
-      <div class="ranking-item" onclick="selectStation(${loc.id})">
-        <span class="ranking-name">${i + 1}. ${esc(loc.name)}</span>
-        <span class="ranking-pm">${pm}</span>
-      </div>`;
-  }).join('');
+  pEl.innerHTML = top10dirty.map(rowHtml).join('');
+  cEl.innerHTML = top10clean.map(rowHtml).join('');
 }
 
+/* ─────────────────────────────────
+   Station selection + detail
+───────────────────────────────── */
 function filterStations() { renderList(allLocations); }
 
 async function selectStation(id) {
@@ -1117,23 +836,32 @@ async function selectStation(id) {
     background:${loc.aqi.color}18;color:${loc.aqi.color};
     border:1px solid ${loc.aqi.color}44;
     padding:0.22rem 0.7rem;border-radius:999px;
-    font-size:0.67rem;font-weight:600;
-    letter-spacing:0.06em;text-transform:uppercase;display:inline-block;
+    font-size:0.72rem;font-weight:600;display:inline-block;
   `;
 
   document.getElementById('detail-updated').textContent =
-    loc.updated ? 'Updated ' + fmtDt(loc.updated) : 'No recent data';
+    loc.updated ? 'อัพเดต ' + fmtDt(loc.updated) : 'ไม่มีข้อมูลล่าสุด';
+  
+  // ขึ้นสถานะกำลังโหลดก่อนเรียก API
   document.getElementById('chart-bars').innerHTML =
-    '<span style="font-size:0.68rem;color:var(--text-muted)">Loading…</span>';
+    '<span style="font-size:0.68rem;color:var(--text-muted)">กำลังโหลด…</span>';
   document.getElementById('detail-drawer').classList.add('open');
 
   try {
-    const res  = await fetch(`/api/measurements/${id}`);
+    const res = await fetch(`/api/measurements/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    renderChart(data.measurements || []);
-  } catch {
+    
+    if (data && data.parameters) {
+      renderChart(data.parameters);
+    } else {
+      document.getElementById('chart-bars').innerHTML =
+        '<span style="font-size:0.68rem;color:var(--text-muted)">ไม่มีข้อมูลพารามิเตอร์เพิ่มเติม</span>';
+    }
+  } catch (err) {
+    console.error("Chart load error:", err);
     document.getElementById('chart-bars').innerHTML =
-      '<span style="font-size:0.68rem;color:var(--text-muted)">No history available</span>';
+      '<span style="font-size:0.68rem;color:var(--text-muted)">ไม่สามารถโหลดข้อมูลได้</span>';
   }
 }
 
@@ -1143,37 +871,96 @@ function closeDetail() {
   document.querySelectorAll('.station-row').forEach(r => r.classList.remove('active'));
 }
 
-function renderChart(measurements) {
+/* ─────────────────────────────────
+   Chart (Vertical Bars)
+───────────────────────────────── */
+function renderChart(parameters) {
   const el = document.getElementById('chart-bars');
-  if (!measurements.length) {
-    el.innerHTML = '<span style="font-size:0.68rem;color:var(--text-muted)">No data</span>';
+  if (!parameters || Object.keys(parameters).length === 0) {
+    el.innerHTML = '<span style="font-size:0.68rem;color:var(--text-muted)">ไม่มีข้อมูล</span>';
     return;
   }
-  const items  = [...measurements].reverse();
-  const maxVal = Math.max(...items.map(m => m.value || 0), 1);
-  el.innerHTML = items.map(m => {
-    const pct   = m.value !== null ? Math.max((m.value / maxVal) * 100, 4) : 4;
-    const color = m.value !== null ? m.aqi.color : '#d0d8e0';
-    const dt    = m.datetime ? fmtDt(m.datetime) : '';
-    const tip   = m.value !== null ? `${m.value} µg/m³ · ${dt}` : `N/A · ${dt}`;
-    return `<div class="chart-bar" style="height:${pct}%;background:${color}" data-tip="${tip}"></div>`;
+  
+  const params = [
+    { key: 'PM25', label: 'PM2.5', unit: 'µg/m³', max: 250 },
+    { key: 'PM10', label: 'PM10',  unit: 'µg/m³', max: 420 },
+    { key: 'O3',   label: 'O₃',    unit: 'ppb',   max: 200 },
+    { key: 'CO',   label: 'CO',    unit: 'ppm',   max: 30 },
+    { key: 'NO2',  label: 'NO₂',   unit: 'ppb',   max: 200 },
+    { key: 'SO2',  label: 'SO₂',   unit: 'ppb',   max: 200 },
+    { key: 'AQI',  label: 'AQI',   unit: '',      max: 500 },
+  ];
+
+  const colorMap = {
+    0: '#d0d8e0', 1: '#22c55e', 2: '#eab308',
+    3: '#f97316', 4: '#ef4444', 5: '#a855f7', 6: '#7f1d1d',
+  };
+  const aqiLabelMap = {
+    1: 'ดี', 2: 'ปานกลาง', 3: 'กลุ่มเสี่ยง',
+    4: 'ไม่ดี', 5: 'แย่มาก', 6: 'อันตราย',
+  };
+
+  const columns = params.map(p => {
+    const d = parameters[p.key];
+    
+    // ดึงค่าตัวเลขอย่างระมัดระวัง (รองรับทั้ง value และ aqi)
+    let rawVal = null;
+    if (d && d.value !== undefined && d.value !== null) rawVal = d.value;
+    else if (d && d.aqi !== undefined && d.aqi !== null) rawVal = d.aqi;
+
+    const val = (rawVal !== null && rawVal !== '-' && rawVal !== '') ? parseFloat(rawVal) : null;
+    
+    // ดึงรหัสสี (รองรับทั้ง color_id และ Level)
+    let colorId = 0;
+    if (d && d.color_id !== undefined && d.color_id !== null) colorId = parseInt(d.color_id);
+    else if (d && d.Level !== undefined && d.Level !== null) colorId = parseInt(d.Level);
+    
+    const color = colorMap[colorId] || '#d0d8e0';
+    
+    const hasData = val !== null && !isNaN(val) && val >= 0;
+    const pct = hasData ? Math.min((val / p.max) * 100, 100) : 0;
+    const displayVal = hasData ? val : 'N/A';
+    const aqiText = colorId > 0 ? ` · ${aqiLabelMap[colorId] || ''}` : '';
+    const tip = hasData ? `${p.label}: ${val} ${p.unit}${aqiText}` : `${p.label}: ไม่มีข้อมูล`;
+
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem;flex:1;">
+        <div style="text-align:center;line-height:1.1;height:24px;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="font-family:var(--mono);color:${hasData ? color : 'var(--text-muted)'};font-weight:600;font-size:0.65rem;">${displayVal}</div>
+          <div style="color:var(--text-muted);font-size:0.5rem;display:${p.unit ? 'block' : 'none'}">${p.unit}</div>
+        </div>
+        
+        <div style="width:14px;height:75px;background:var(--bg);border-radius:4px;display:flex;align-items:flex-end;overflow:hidden;">
+          <div style="width:100%;height:${pct}%;background:${color};border-radius:4px;transition:height 0.4s ease;" title="${tip}"></div>
+        </div>
+        
+        <div style="color:var(--text-dim);font-weight:600;font-size:0.6rem;text-align:center;">${p.label}</div>
+      </div>
+    `;
   }).join('');
+
+  el.innerHTML = `<div style="display:flex;flex-direction:row;width:100%;justify-content:space-between;align-items:flex-end;padding-top:5px;">${columns}</div>`;
 }
 
+/* ─────────────────────────────────
+   Data loading
+───────────────────────────────── */
 async function loadData() {
   const btn = document.getElementById('refresh-btn');
   btn.disabled = true;
   try {
     const [sumRes, locRes] = await Promise.all([
-      fetch('/api/summary'),
-      fetch('/api/locations'),
+      fetch('/api/summary?source=air4thai'),
+      fetch('/api/locations?source=air4thai'),
     ]);
     if (!sumRes.ok || !locRes.ok) throw new Error(`HTTP ${sumRes.status}/${locRes.status}`);
 
     const sum     = await sumRes.json();
     const locData = await locRes.json();
     allLocations  = locData.locations || [];
+
     renderRankings(allLocations);
+    refreshProvinceStyles();
 
     document.getElementById('stat-stations').textContent = sum.stations_with_data ?? '—';
     document.getElementById('stat-avg').textContent      = sum.pm25_avg ?? '—';
@@ -1181,7 +968,7 @@ async function loadData() {
     document.getElementById('stat-min').textContent      = sum.pm25_min ?? '—';
     if (sum.worst_station) {
       document.getElementById('stat-max-name').textContent = sum.worst_station.name;
-      document.getElementById('stat-max').style.color = sum.worst_station.aqi.color;
+      document.getElementById('stat-max').style.color      = sum.worst_station.aqi.color;
     }
     document.getElementById('station-count').textContent = allLocations.length;
 
@@ -1192,15 +979,15 @@ async function loadData() {
       if (m) markers[loc.id] = m;
     });
 
-    allLocations.sort((a, b) => (b.pm25 || 0) - (a.pm25 || 0));
+    allLocations.sort((a,b) => (b.pm25||0) - (a.pm25||0));
     renderList(allLocations);
 
-    document.getElementById('last-update').textContent =
-      new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('last-update').textContent = now + ' น.';
     document.getElementById('live-dot').classList.remove('offline');
     document.getElementById('loading').classList.add('hidden');
   } catch (err) {
-    showToast('Error: ' + err.message);
+    showToast('ข้อผิดพลาด: ' + err.message);
     document.getElementById('live-dot').classList.add('offline');
     document.getElementById('loading').classList.add('hidden');
   } finally {
@@ -1213,34 +1000,22 @@ async function refreshData() {
   await loadData();
 }
 
-function esc(s) { return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function fmtDt(s) {
-  try {
-    return new Date(s).toLocaleString('en-GB', {
-      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-    });
-  } catch { return s; }
-}
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 4000);
-}
-
+/* ─────────────────────────────────
+   Favorites (DB)
+───────────────────────────────── */
 async function saveFavorite() {
   if (!selectedId) return;
   const loc = allLocations.find(l => l.id === selectedId);
   if (!loc) return;
   try {
-    const res = await fetch('/api/favorites', {
+    const res  = await fetch('/api/favorites', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ station_name: loc.name, pm25_value: loc.pm25 || 0 })
+      body: JSON.stringify({ station_id: String(selectedId), station_name: loc.name, pm25_value: loc.pm25 || 0 }),
     });
     const data = await res.json();
-    res.ok ? showToast('Saved to favorites') : showToast('Error: ' + data.detail);
-  } catch { showToast('Could not connect to database'); }
+    res.ok ? showToast(`บันทึก "${loc.name}" เรียบร้อย`) : showToast('ข้อผิดพลาด: ' + data.detail);
+  } catch { showToast('ไม่สามารถเชื่อมต่อฐานข้อมูลได้'); }
 }
 
 async function showFavorites() {
@@ -1248,24 +1023,26 @@ async function showFavorites() {
     const res  = await fetch('/api/favorites');
     const data = await res.json();
     if (data.favorites?.length) {
-      let msg = 'Favorites:\n\n';
-      data.favorites.forEach(f => { msg += `${f.station_name} — PM2.5: ${f.pm25_value}\n`; });
+      let msg = 'สถานีโปรด:\n\n';
+      data.favorites.forEach(f => {
+        const sid = f.station_id ? `[${f.station_id}] ` : '';
+        msg += `${sid}${f.station_name} — PM2.5: ${f.pm25_value} µg/m³\n`;
+      });
       alert(msg);
     } else {
-      alert('No favorites saved yet.\nOpen a station and tap "Save to Favorites".');
+      alert('ยังไม่มีสถานีโปรด\nเปิดสถานีแล้วกด "บันทึกสถานีโปรด"');
     }
-  } catch { showToast('Could not fetch favorites'); }
+  } catch { showToast('ไม่สามารถดึงข้อมูลสถานีโปรดได้'); }
 }
+
+document.getElementById('right-scroll-area').addEventListener('scroll', function() {
+  const hint = document.getElementById('scroll-hint');
+  if (hint) hint.style.opacity = this.scrollTop > 40 ? '0' : '1';
+}, { passive: true });
 
 initMap();
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
-
-// Hide scroll hint once user scrolls to rankings
-document.getElementById('right-scroll-area').addEventListener('scroll', function() {
-  const hint = this.querySelector('.scroll-hint');
-  if (hint) hint.style.opacity = this.scrollTop > 30 ? '0' : '1';
-}, { passive: true });
 </script>
 </body>
 </html>
