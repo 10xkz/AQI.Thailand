@@ -330,16 +330,10 @@ body {
 }
 
 .rankings-footer {
-  position: fixed;
-  left: var(--sidebar-w);
-  right: 0;
-  bottom: var(--footer-h);
-  height: var(--rankings-h);
-  z-index: 220;
   background: var(--white);
   border-top: 1px solid var(--border);
-  box-shadow: 0 -4px 18px rgba(0,0,0,0.06);
-  padding: 0.85rem 1.5rem 1rem;
+  padding: 1rem 1.5rem 1.25rem;
+  pointer-events: all;
 }
 
 .rankings-heading {
@@ -481,7 +475,7 @@ body {
   position: fixed;
   left: var(--sidebar-w);
   right: 0;
-  bottom: calc(var(--footer-h) + var(--rankings-h));
+  bottom: var(--footer-h);
   z-index: 250;
   background: var(--white);
   border-top: 1px solid var(--border);
@@ -495,10 +489,6 @@ body {
 .detail-panel.open { transform: translateY(0); }
 
 .sidebar.collapsed ~ .detail-panel {
-  left: 32px;
-}
-
-.sidebar.collapsed ~ .rankings-footer {
   left: 32px;
 }
 
@@ -734,6 +724,76 @@ body {
   background: rgba(255,255,255,0.85) !important;
 }
 
+/* === Right-side scroll container === */
+.right-scroll-area {
+  position: fixed;
+  top: calc(var(--topbar-h) + var(--stats-h));
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: var(--footer-h);
+  overflow-y: auto;
+  z-index: 50;
+  pointer-events: none; /* map clicks pass through spacer */
+  scroll-behavior: smooth;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed ~ .right-scroll-area {
+  left: 32px;
+}
+
+.right-scroll-area::-webkit-scrollbar { width: 4px; }
+.right-scroll-area::-webkit-scrollbar-track { background: transparent; }
+.right-scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* Transparent spacer = the map viewport area */
+.map-scroll-spacer {
+  height: calc(100vh - var(--topbar-h) - var(--stats-h) - var(--footer-h));
+  pointer-events: none;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 1.5rem;
+}
+
+/* Scroll hint arrow */
+.scroll-hint {
+  pointer-events: all;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  animation: hintBounce 2.2s ease-in-out infinite;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 1rem 0.4rem 0.9rem;
+  box-shadow: var(--shadow-sm);
+  gap: 0.45rem;
+  flex-direction: row;
+}
+
+.scroll-hint-text {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.scroll-hint-arrow {
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+@keyframes hintBounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(6px); }
+}
+
 @keyframes spin   { to { transform: rotate(360deg); } }
 @keyframes blink  { 0%,100%{opacity:1}50%{opacity:0.25} }
 @keyframes fadeUp {
@@ -742,13 +802,14 @@ body {
 }
 
 @media (max-width: 768px) {
-  :root { --sidebar-w: 100vw; --rankings-h: 240px; }
+  :root { --sidebar-w: 100vw; }
   .stats-bar { grid-template-columns: repeat(2, 1fr); }
   .topbar-eyebrow { display: none; }
   #last-update { display: none; }
   .detail-panel { left: 0; }
   .detail-grid { grid-template-columns: 1fr; gap: 1rem; max-height: 50vh; overflow-y: auto; }
-  .rankings-footer { left: 0; right: 0; padding: 0.8rem 1rem; }
+  .right-scroll-area { left: 0; }
+  .rankings-footer { padding: 0.8rem 1rem; }
   .rankings-grid { grid-template-columns: 1fr; }
 }
 </style>
@@ -860,16 +921,27 @@ body {
   </div>
 </div>
 
-<div class="rankings-footer" id="rankings-footer">
-  <div class="rankings-heading">Live City Rankings</div>
-  <div class="rankings-grid">
-    <div class="ranking-card">
-      <div class="ranking-title">Most Polluted Cities (Top 10)</div>
-      <div class="ranking-list" id="ranking-polluted"></div>
+<div class="right-scroll-area" id="right-scroll-area">
+  <!-- Transparent spacer over the map -->
+  <div class="map-scroll-spacer">
+    <div class="scroll-hint" onclick="document.getElementById('right-scroll-area').scrollTo({top:99999,behavior:'smooth'})">
+      <span class="scroll-hint-text">City Rankings</span>
+      <span class="scroll-hint-arrow">▼</span>
     </div>
-    <div class="ranking-card">
-      <div class="ranking-title">Cleanest Cities (Top 10)</div>
-      <div class="ranking-list" id="ranking-cleanest"></div>
+  </div>
+
+  <!-- Rankings section (scroll down to see) -->
+  <div class="rankings-footer" id="rankings-footer">
+    <div class="rankings-heading">Live City Rankings</div>
+    <div class="rankings-grid">
+      <div class="ranking-card">
+        <div class="ranking-title">Most Polluted Cities (Top 10)</div>
+        <div class="ranking-list" id="ranking-polluted"></div>
+      </div>
+      <div class="ranking-card">
+        <div class="ranking-title">Cleanest Cities (Top 10)</div>
+        <div class="ranking-list" id="ranking-cleanest"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1188,6 +1260,12 @@ async function showFavorites() {
 initMap();
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
+
+// Hide scroll hint once user scrolls to rankings
+document.getElementById('right-scroll-area').addEventListener('scroll', function() {
+  const hint = this.querySelector('.scroll-hint');
+  if (hint) hint.style.opacity = this.scrollTop > 30 ? '0' : '1';
+}, { passive: true });
 </script>
 </body>
 </html>
