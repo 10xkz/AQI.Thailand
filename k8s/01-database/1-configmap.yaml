@@ -5,6 +5,7 @@ metadata:
   namespace: jenkins
 data:
   init.sql: |
+    DROP TABLE IF EXISTS favorites;
     CREATE TABLE IF NOT EXISTS favorites (
       id SERIAL PRIMARY KEY,
       station_id TEXT,
