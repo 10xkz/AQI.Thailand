@@ -14,6 +14,7 @@
   --topbar-h:   52px;
   --stats-h:    88px;
   --footer-h:   36px;
+  --rankings-h: 210px;
   --sidebar-w:  300px;
 
   --bg:          #f2f4f7;
@@ -328,14 +329,95 @@ body {
   box-shadow: 0 0 0 3px rgba(224,92,75,0.08);
 }
 
-.station-list {
+.rankings-footer {
+  position: fixed;
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: var(--footer-h);
+  height: var(--rankings-h);
+  z-index: 220;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 18px rgba(0,0,0,0.06);
+  padding: 0.85rem 1.5rem 1rem;
+}
+
+.rankings-heading {
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.rankings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.ranking-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.ranking-card:last-child { margin-bottom: 0; }
+
+.ranking-title {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px dashed var(--border);
+  cursor: pointer;
+}
+
+.ranking-item:last-child { border-bottom: none; }
+
+.ranking-name {
+  max-width: 165px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+
+.ranking-pm {
+  font-family: var(--mono);
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.ranking-empty {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  padding: 0.25rem 0;
+}
+
+.sidebar-scroll {
   flex: 1;
   overflow-y: auto;
 }
 
-.station-list::-webkit-scrollbar { width: 3px; }
-.station-list::-webkit-scrollbar-track { background: transparent; }
-.station-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+.sidebar-scroll::-webkit-scrollbar { width: 3px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+.station-list { padding-bottom: 0.75rem; }
 
 .station-row {
   display: flex;
@@ -399,7 +481,7 @@ body {
   position: fixed;
   left: var(--sidebar-w);
   right: 0;
-  bottom: var(--footer-h);
+  bottom: calc(var(--footer-h) + var(--rankings-h));
   z-index: 250;
   background: var(--white);
   border-top: 1px solid var(--border);
@@ -413,6 +495,10 @@ body {
 .detail-panel.open { transform: translateY(0); }
 
 .sidebar.collapsed ~ .detail-panel {
+  left: 32px;
+}
+
+.sidebar.collapsed ~ .rankings-footer {
   left: 32px;
 }
 
@@ -656,12 +742,14 @@ body {
 }
 
 @media (max-width: 768px) {
-  :root { --sidebar-w: 100vw; }
+  :root { --sidebar-w: 100vw; --rankings-h: 240px; }
   .stats-bar { grid-template-columns: repeat(2, 1fr); }
   .topbar-eyebrow { display: none; }
   #last-update { display: none; }
   .detail-panel { left: 0; }
   .detail-grid { grid-template-columns: 1fr; gap: 1rem; max-height: 50vh; overflow-y: auto; }
+  .rankings-footer { left: 0; right: 0; padding: 0.8rem 1rem; }
+  .rankings-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -738,7 +826,9 @@ body {
       <input type="text" id="search-input" placeholder="Search station or city…" oninput="filterStations()" />
     </div>
 
-    <div class="station-list" id="station-list"></div>
+    <div class="sidebar-scroll">
+      <div class="station-list" id="station-list"></div>
+    </div>
   </div>
 </div>
 
@@ -766,6 +856,20 @@ body {
       <div class="chart-bars" id="chart-bars">
         <span style="font-size:0.68rem;color:var(--text-muted)">Loading…</span>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="rankings-footer" id="rankings-footer">
+  <div class="rankings-heading">Live City Rankings</div>
+  <div class="rankings-grid">
+    <div class="ranking-card">
+      <div class="ranking-title">Most Polluted Cities (Top 10)</div>
+      <div class="ranking-list" id="ranking-polluted"></div>
+    </div>
+    <div class="ranking-card">
+      <div class="ranking-title">Cleanest Cities (Top 10)</div>
+      <div class="ranking-list" id="ranking-cleanest"></div>
     </div>
   </div>
 </div>
@@ -878,6 +982,44 @@ function renderList(locations) {
   }).join('');
 }
 
+function renderRankings(locations) {
+  const pollutedEl = document.getElementById('ranking-polluted');
+  const cleanEl = document.getElementById('ranking-cleanest');
+  if (!pollutedEl || !cleanEl) return;
+
+  const ranked = locations.filter(l => l.pm25 !== null);
+  if (!ranked.length) {
+    pollutedEl.innerHTML = '<div class="ranking-empty">No data yet</div>';
+    cleanEl.innerHTML = '<div class="ranking-empty">No data yet</div>';
+    return;
+  }
+
+  const polluted = [...ranked]
+    .sort((a, b) => (b.pm25 || 0) - (a.pm25 || 0))
+    .slice(0, 10);
+  const cleanest = [...ranked]
+    .sort((a, b) => (a.pm25 || 0) - (b.pm25 || 0))
+    .slice(0, 10);
+
+  pollutedEl.innerHTML = polluted.map((loc, i) => {
+    const pm = loc.pm25 !== null ? loc.pm25 : '—';
+    return `
+      <div class="ranking-item" onclick="selectStation(${loc.id})">
+        <span class="ranking-name">${i + 1}. ${esc(loc.name)}</span>
+        <span class="ranking-pm">${pm}</span>
+      </div>`;
+  }).join('');
+
+  cleanEl.innerHTML = cleanest.map((loc, i) => {
+    const pm = loc.pm25 !== null ? loc.pm25 : '—';
+    return `
+      <div class="ranking-item" onclick="selectStation(${loc.id})">
+        <span class="ranking-name">${i + 1}. ${esc(loc.name)}</span>
+        <span class="ranking-pm">${pm}</span>
+      </div>`;
+  }).join('');
+}
+
 function filterStations() { renderList(allLocations); }
 
 async function selectStation(id) {
@@ -959,6 +1101,7 @@ async function loadData() {
     const sum     = await sumRes.json();
     const locData = await locRes.json();
     allLocations  = locData.locations || [];
+    renderRankings(allLocations);
 
     document.getElementById('stat-stations').textContent = sum.stations_with_data ?? '—';
     document.getElementById('stat-avg').textContent      = sum.pm25_avg ?? '—';
