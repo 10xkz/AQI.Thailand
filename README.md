@@ -1,13 +1,13 @@
-# 🚀 PM2.5 Thailand Monitor — ENG23 3074
+# PM2.5 Thailand Monitor — ENG23 3074
 
-> ระบบติดตามคุณภาพอากาศ PM2.5 ประเทศไทยแบบ Real-time สร้างด้วย Python FastAPI + PostgreSQL + HTML/JS containerize ด้วย Docker และ deploy บน Kubernetes ผ่าน Jenkins CI/CD pipeline อัตโนมัติ
+> ระบบติดตามคุณภาพอากาศ PM2.5 ประเทศไทยแบบ Real-time พัฒนาด้วย Python FastAPI และ PostgreSQL พร้อม Static Frontend (HTML/JS) ทำงานบน Docker Container และ deploy อัตโนมัติผ่าน Jenkins CI/CD Pipeline บน Kubernetes Cluster
 
 ---
 
 ## 👥 สมาชิกในกลุ่ม
 
 | รหัสนักศึกษา | ชื่อ-นามสกุล | ความรับผิดชอบ |
-|-------------|-------------|---------------|
+|:-----------:|-------------|---------------|
 | 6XXXXXXX | ชื่อ นามสกุล | Git, App Development |
 | 6XXXXXXX | ชื่อ นามสกุล | Jenkins, Docker |
 | 6XXXXXXX | ชื่อ นามสกุล | Terraform, Ansible |
@@ -18,12 +18,18 @@
 ## 📌 ภาพรวมโปรเจค
 
 ### แอปพลิเคชัน
-- **ชื่อ:** PM2.5 Thailand Monitor
-- **ประเภท:** Full-Stack Web App (REST API + Static Frontend)
-- **ภาษา / Framework:** Python FastAPI (Backend) · HTML/CSS/JavaScript (Frontend) · PostgreSQL (Database)
-- **คำอธิบาย:** ระบบแสดงข้อมูลคุณภาพอากาศ PM2.5 ทั่วประเทศไทยแบบ Real-time โดยดึงข้อมูลจาก Air4Thai API (กรมควบคุมมลพิษ) คำนวณค่า AQI แสดงสถานะสถานีตรวจวัดทั่วประเทศ และรองรับการบันทึกสถานีโปรดลงฐานข้อมูล PostgreSQL
+
+| รายละเอียด | คำอธิบาย |
+|-----------|----------|
+| **ชื่อ** | PM2.5 Thailand Monitor |
+| **ประเภท** | Full-Stack Web Application (REST API + Static Frontend) |
+| **Backend** | Python FastAPI |
+| **Frontend** | HTML / CSS / JavaScript |
+| **Database** | PostgreSQL |
+| **คำอธิบาย** | ระบบแสดงข้อมูลคุณภาพอากาศ PM2.5 ทั่วประเทศไทยแบบ Real-time โดยดึงข้อมูลจาก Air4Thai API (กรมควบคุมมลพิษ) คำนวณค่า AQI แสดงสถานะสถานีตรวจวัดทั่วประเทศ และรองรับการบันทึกสถานีโปรดลงฐานข้อมูล |
 
 ### Architecture Diagram
+
 ```
 Developer
     │
@@ -71,11 +77,11 @@ PM2.5-Thailand/
 ├── backend/
 │   ├── main.py                 # FastAPI app — Air4Thai proxy, AQI calc, favorites API
 │   ├── requirements.txt        # Python dependencies (fastapi, httpx, psycopg2, prometheus)
-│   └── Dockerfile              # คำสั่งสร้าง Docker image สำหรับ backend
+│   └── Dockerfile              # Docker image สำหรับ backend
 ├── frontend/
 │   ├── index.html              # Single-page UI แสดงแผนที่และข้อมูลสถานี PM2.5
 │   ├── nginx.conf              # Nginx config สำหรับ serve frontend + reverse proxy ไป backend
-│   └── Dockerfile              # คำสั่งสร้าง Docker image สำหรับ frontend (Nginx)
+│   └── Dockerfile              # Docker image สำหรับ frontend (Nginx)
 ├── database/
 │   └── init.sql                # SQL script สร้างตาราง favorites สำหรับ PostgreSQL
 ├── k8s/
@@ -102,12 +108,12 @@ PM2.5-Thailand/
 
 ---
 
-## ⚙️ สิ่งที่ต้องติดตั้งก่อน (Prerequisites)
+## ⚙️ Prerequisites
 
-ตรวจสอบให้แน่ใจว่าติดตั้งทุก tool ครบก่อนรันโปรเจค
+ตรวจสอบให้แน่ใจว่าติดตั้ง tool ต่อไปนี้ครบถ้วนก่อนเริ่มใช้งานโปรเจค
 
 | Tool | Version | หน้าที่ |
-|------|---------|---------| 
+|------|:-------:|---------| 
 | Git | ≥ 2.x | จัดการ source code |
 | Docker | ≥ 24.x | สร้างและรัน container |
 | Jenkins | ≥ 2.4xx | ระบบ CI/CD automation |
@@ -120,42 +126,45 @@ PM2.5-Thailand/
 
 ---
 
-## 🏃 วิธีรันโปรเจค (Quick Start)
+## 🏃 วิธีรันโปรเจค
 
 ### 1. Clone Repository
+
 ```bash
 git clone https://github.com/10xkz/PM2.5-Thailand.git
 cd PM2.5-Thailand
 ```
 
-### 2. รันแอปด้วย Docker Compose (แนะนำ)
+### 2. รันด้วย Docker Compose (แนะนำ)
+
 ```bash
 # รัน core services (db + backend + frontend)
 docker compose up -d
 
-# รัน core services + prometheus monitoring
+# รัน core services พร้อม prometheus monitoring
 docker compose --profile monitoring up -d
 ```
 
 | Service | URL |
 |---------|-----|
 | Frontend (UI) | http://localhost:8080 |
-| Backend (API docs) | http://localhost:8000/docs |
+| Backend (API Docs) | http://localhost:8000/docs |
 | Prometheus | http://localhost:9090 |
 
 ### 3. รัน Backend โดยตรง (ไม่ผ่าน Docker)
+
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
-# API docs ที่ http://localhost:8000/docs
+# เข้าถึง API docs ได้ที่ http://localhost:8000/docs
 ```
 
 ---
 
 ## 🔄 CI/CD Pipeline (Jenkins)
 
-### ลำดับการทำงานของ Pipeline
+### ลำดับการทำงาน
 
 ```
 Checkout ──▶ Build ──▶ Test ──▶ Docker Build ──▶ Push to Hub ──▶ Deploy
@@ -164,61 +173,76 @@ Checkout ──▶ Build ──▶ Test ──▶ Docker Build ──▶ Push to
 | Stage | คำอธิบาย |
 |-------|----------|
 | **Checkout** | ดึงโค้ดล่าสุดจาก GitHub ผ่าน `checkout scm` |
-| **Build** | ตรวจ syntax `backend/main.py` ด้วย `py_compile` และตรวจไฟล์จำเป็น |
-| **Test** | รัน unit test (echo ผ่าน) |
-| **Docker Build** | build image `rubchek/pm25-backend` และ `rubchek/pm25-frontend` พร้อม tag ด้วย BUILD_NUMBER |
+| **Build** | ตรวจ syntax ของ `backend/main.py` ด้วย `py_compile` และตรวจสอบไฟล์ที่จำเป็น |
+| **Test** | รัน unit test |
+| **Docker Build** | Build image `rubchek/pm25-backend` และ `rubchek/pm25-frontend` พร้อม tag ด้วย `BUILD_NUMBER` |
 | **Push to Hub** | อัปโหลด image ขึ้น Docker Hub ด้วย credentials `docker-hub-credentials` |
 | **Deploy** | รัน Terraform + Ansible → apply k8s manifests ทั้งหมดใน `k8s/` → rollout restart → health check |
 
-### วิธีตั้งค่า Jenkins
+### การตั้งค่า Jenkins
+
 1. ติดตั้ง Jenkins และเปิดที่ `http://localhost:8080`
-2. ติดตั้ง plugin: **Git**, **Pipeline**, **Docker Pipeline**
-3. เพิ่ม credentials สำหรับ Docker Hub (ชื่อ `docker-hub-credentials`)
-4. สร้าง Pipeline job ใหม่ และชี้ไปที่ repository นี้
+2. ติดตั้ง plugin ที่จำเป็น: **Git**, **Pipeline**, **Docker Pipeline**
+3. เพิ่ม credentials สำหรับ Docker Hub (ID: `docker-hub-credentials`)
+4. สร้าง Pipeline job ใหม่ และกำหนด source ไปยัง repository นี้
 5. ตั้งค่า Webhook ใน GitHub:
    - ไปที่ **Settings → Webhooks → Add webhook**
    - Payload URL: `http://[jenkins-host]:8080/github-webhook/`
    - Content type: `application/json`
-   - ติ๊ก trigger: **Just the push event**
+   - Trigger: **Just the push event**
 
 ---
 
 ## 🏗️ Infrastructure as Code
 
 ### Terraform — Provision Infrastructure
+
 ```bash
 cd terraform
-terraform init      # ดาวน์โหลด provider plugins (kreuzwerker/docker, hashicorp/local, hashicorp/tls)
-terraform plan      # ตรวจสอบว่าจะสร้างอะไรบ้าง
+terraform init      # ดาวน์โหลด provider plugins
+terraform plan      # ตรวจสอบ resource ที่จะถูกสร้าง
 terraform apply     # สร้าง resource จริง
 ```
-> **สิ่งที่ Terraform สร้าง:** RSA SSH key pair (4096-bit) บันทึกเป็นไฟล์ `ansible_id_rsa` / `ansible_id_rsa.pub`, Docker network ชื่อ `terraform-pm25-net`, และ Docker container `ansible-target-node` จำลอง VM สำหรับ Ansible
+
+**Resource ที่ Terraform จัดการ:**
+- RSA SSH key pair (4096-bit) บันทึกเป็นไฟล์ `ansible_id_rsa` และ `ansible_id_rsa.pub`
+- Docker network ชื่อ `terraform-pm25-net`
+- Docker container `ansible-target-node` สำหรับจำลอง VM ให้ Ansible
 
 ### Ansible — Configure Environment
+
 ```bash
 cd ansible
 ansible-playbook -i inventory.ini playbook.yml
 ```
-> **สิ่งที่ Ansible ทำ:** อัปเดต apt cache, ติดตั้ง curl/wget/git/ca-certificates, ติดตั้ง Docker Engine (ถ้าไม่ได้รันใน container), เพิ่ม ubuntu user เข้า docker group, สร้าง directory `/opt/pm25-monitor`
 
-> ⚠️ **หมายเหตุ:** ใน pipeline จริง Jenkins จะเรียก Terraform และ Ansible อัตโนมัติในขั้นตอน Deploy ไม่ต้องรันด้วยมือ
+**Task ที่ Ansible ดำเนินการ:**
+- อัปเดต apt cache และติดตั้ง dependencies (`curl`, `wget`, `git`, `ca-certificates`)
+- ติดตั้ง Docker Engine (กรณีที่ยังไม่ได้รันใน container)
+- เพิ่ม `ubuntu` user เข้า `docker` group
+- สร้าง working directory `/opt/pm25-monitor`
+
+> **หมายเหตุ:** ใน pipeline จริง Jenkins จะเรียก Terraform และ Ansible อัตโนมัติในขั้นตอน Deploy ไม่จำเป็นต้องรันด้วยมือ
 
 ---
 
 ## ☸️ Kubernetes Deployment
 
-### Apply Manifests ด้วยตัวเอง
+### Apply Manifests
+
 ```bash
 kubectl apply -R -f k8s/
 ```
 
 ### ตรวจสอบสถานะ
+
 ```bash
 kubectl get pods -n jenkins
 kubectl get svc  -n jenkins
 ```
 
-### ผลลัพธ์ที่ควรจะได้
+### ผลลัพธ์ที่คาดหวัง
+
 ```
 NAME                            READY   STATUS    RESTARTS   AGE
 pm25-backend-xxxxxxxxx-xxxxx    1/1     Running   0          2m
@@ -230,175 +254,191 @@ pm25-backend-svc   NodePort   10.96.xx.xxx   8000:30800/TCP   2m
 ```
 
 ### เข้าถึงแอปพลิเคชัน
-```
-Frontend UI  → http://localhost:30080
-Backend API  → http://localhost:30800/docs
-```
+
+| Service | URL |
+|---------|-----|
+| Frontend UI | http://localhost:30080 |
+| Backend API Docs | http://localhost:30800/docs |
 
 ---
 
 ## 📊 Monitoring
 
-### Prometheus — เก็บ Metrics
-- ไฟล์ config: `prometheus/prometheus.yml`
-- Scrape ทุก **15 วินาที**
+### Prometheus — Metrics Collection
+
+- Config file: `prometheus/prometheus.yml`
+- Scrape interval: **ทุก 15 วินาที**
 - Target endpoint: `http://backend:8000/metrics` (prometheus-fastapi-instrumentator)
 
-รัน Prometheus (ผ่าน Docker Compose):
 ```bash
+# รัน Prometheus ผ่าน Docker Compose
 docker compose --profile monitoring up -d prometheus
 # เปิด UI ที่ http://localhost:9090
 ```
 
-### Grafana — แสดง Dashboard
+### Grafana — Dashboard Visualization
+
 - Deploy บน Kubernetes ใน `k8s/04-monitoring/grafana/`
 - Data source: Prometheus (`http://localhost:9090`)
 
-วิธี import dashboard:
+**วิธี Import Dashboard:**
 1. เปิด Grafana ที่ `http://localhost:3000`
 2. ไปที่ **Dashboards → Import**
-3. อัปโหลดไฟล์ dashboard json
+3. อัปโหลดไฟล์ dashboard JSON
 
-### Panels ใน Dashboard
+### Dashboard Panels
 
-| Panel | Metric (PromQL) | แสดงข้อมูลอะไร |
-|-------|-----------------|----------------|
+| Panel | PromQL | คำอธิบาย |
+|-------|--------|----------|
 | Request Rate | `rate(http_requests_total[1m])` | จำนวน request ต่อวินาที |
-| Error Rate | `rate(http_requests_total{status=~"5.."}[1m])` | จำนวน error 5xx ต่อวินาที |
-| Latency (p95) | `histogram_quantile(0.95, ...)` | response time ที่ percentile 95 |
-| Pod Health | `up{job="pm25_backend"}` | service ขึ้นหรือล่ม (1/0) |
+| Error Rate | `rate(http_requests_total{status=~"5.."}[1m])` | จำนวน 5xx error ต่อวินาที |
+| Latency (p95) | `histogram_quantile(0.95, ...)` | Response time ที่ percentile 95 |
+| Pod Health | `up{job="pm25_backend"}` | สถานะ service (1 = up / 0 = down) |
 
 ---
 
 ## 🌿 Branching Strategy
 
 ```
-main        ──── โค้ดที่พร้อม production, protected branch
-dev         ──── รวมโค้ดก่อน merge ขึ้น main
+main        ──── โค้ดที่พร้อม production (protected branch)
+dev         ──── รวมโค้ดและทดสอบก่อน merge ขึ้น main
 feature/*   ──── พัฒนา feature แต่ละอัน (เช่น feature/add-login)
 ```
 
 | Branch | Protected | คำอธิบาย |
-|--------|-----------|----------|
-| `main` | ✅ | trigger pipeline อัตโนมัติเมื่อ merge |
-| `dev` | ✅ | ทดสอบก่อน merge ขึ้น main |
-| `feature/*` | ❌ | พัฒนาแยกกันแล้วค่อย merge เข้า dev |
+|--------|:---------:|----------|
+| `main` | ✅ | Trigger CI/CD pipeline อัตโนมัติเมื่อมีการ merge |
+| `dev` | ✅ | Integration branch สำหรับทดสอบก่อน release |
+| `feature/*` | ❌ | Feature branch แยกตาม task แล้ว merge เข้า `dev` |
 
 ---
 
-## 🧪 API Endpoints
+## 🧪 API Reference
 
 | Method | Endpoint | คำอธิบาย |
-|--------|----------|----------|
-| `GET` | `/health` | Liveness probe — ตรวจว่า backend ยังรันอยู่ |
+|:------:|----------|----------|
+| `GET` | `/health` | Liveness probe — ตรวจสอบสถานะ backend |
 | `GET` | `/metrics` | Prometheus metrics endpoint |
-| `GET` | `/api/locations` | ดึงข้อมูลสถานีตรวจวัด PM2.5 ทั่วประเทศไทยจาก Air4Thai |
-| `GET` | `/api/measurements/{location_id}` | ดึงข้อมูลละเอียด (PM2.5, PM10, O3, CO, NO2, SO2, AQI) ของสถานีนั้น |
+| `GET` | `/api/locations` | ดึงรายการสถานีตรวจวัด PM2.5 ทั่วประเทศจาก Air4Thai |
+| `GET` | `/api/measurements/{location_id}` | ดึงข้อมูลละเอียด (PM2.5, PM10, O3, CO, NO2, SO2, AQI) ของสถานีที่ระบุ |
 | `GET` | `/api/summary` | สรุปสถิติ PM2.5 ระดับประเทศ (avg, max, min, worst station) |
-| `POST` | `/api/discover` | Trigger discovery refresh (Air4Thai mode: skipped) |
+| `POST` | `/api/discover` | Trigger discovery refresh |
 | `GET` | `/api/favorites` | ดึงรายการสถานีโปรดจาก PostgreSQL |
 | `POST` | `/api/favorites` | บันทึกสถานีโปรดลง PostgreSQL |
 
 ---
 
-## Database Schema
+## 🗄️ Database Schema
+
 ```sql
 CREATE TABLE IF NOT EXISTS favorites (
-  id SERIAL PRIMARY KEY,
-  station_id TEXT,
+  id          SERIAL PRIMARY KEY,
+  station_id  TEXT,
   station_name TEXT NOT NULL,
-  pm25_value NUMERIC,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  pm25_value  NUMERIC,
+  created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
 ---
 
-## Backend response
+## 📋 Backend Response Examples
 
-###  sample `GET /api/summary`
- ```json
- {
-   "total_stations": 75,
-   "stations_with_data": 72,
-   "pm25_avg": 26.4,
-   "pm25_max": 84.1,
-   "pm25_min": 3.2,
-   "worst_station": {
-     "name": "Bangkok Startup Station",
-     "city": "Bangkok",
-     "pm25": 84.1,
-     "aqi": { "label": "Unhealthy", "color": "#ef4444", "level": 4 }
-   },
-   "aqi_distribution": { "Good": 20, "Moderate": 35, "Unhealthy": 17 },
-   "fetched_at": "2026-05-08T13:49:46.663000+00:00",
-   "source": "air4thai"
- }
- ```
+### `GET /api/summary`
 
-### sample `GET /api/favorites`
- ```json
-   {
-     "favorites": [
-       {
-         "id": 1,
-         "station_id": "bangkok_startup_station",
-         "station_name": "Bangkok Startup Station",
-         "pm25_value": 25.5,
-         "created_at": "2026-05-08T14:21:02.990000+00:00"
-       }
-     ]
-   }
- ```
----
-
-## 🐛 ปัญหาที่พบบ่อย (Troubleshooting)
-
-**Pods ค้างอยู่ที่ `Pending` ไม่ยอม Running**
-```bash
-kubectl describe pod [pod-name] -n jenkins
-# ดูที่ Events: อาจเกิดจาก resource ไม่พอ หรือ image pull error
+```json
+{
+  "total_stations": 75,
+  "stations_with_data": 72,
+  "pm25_avg": 26.4,
+  "pm25_max": 84.1,
+  "pm25_min": 3.2,
+  "worst_station": {
+    "name": "Bangkok Startup Station",
+    "city": "Bangkok",
+    "pm25": 84.1,
+    "aqi": { "label": "Unhealthy", "color": "#ef4444", "level": 4 }
+  },
+  "aqi_distribution": { "Good": 20, "Moderate": 35, "Unhealthy": 17 },
+  "fetched_at": "2026-05-08T13:49:46.663000+00:00",
+  "source": "air4thai"
+}
 ```
 
-**Jenkins pipeline ล้มเหลวตอน Docker Build**
+### `GET /api/favorites`
+
+```json
+{
+  "favorites": [
+    {
+      "id": 1,
+      "station_id": "bangkok_startup_station",
+      "station_name": "Bangkok Startup Station",
+      "pm25_value": 25.5,
+      "created_at": "2026-05-08T14:21:02.990000+00:00"
+    }
+  ]
+}
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Pods ค้างอยู่ที่ `Pending`
+
 ```bash
-# ตรวจว่า Docker daemon รันอยู่
+kubectl describe pod <pod-name> -n jenkins
+# ตรวจสอบที่ Events — อาจเกิดจาก resource ไม่เพียงพอ หรือ image pull error
+```
+
+### Jenkins Pipeline ล้มเหลวที่ Docker Build Stage
+
+```bash
+# ตรวจสอบว่า Docker daemon กำลังรันอยู่
 sudo systemctl start docker
+
 # เพิ่ม jenkins user เข้า docker group
 sudo usermod -aG docker jenkins
 ```
 
-**Prometheus แสดง target เป็น DOWN**
+### Prometheus แสดง Target เป็น DOWN
+
 ```bash
-# ตรวจว่าแอปเปิด /metrics ได้จริง
+# ทดสอบ metrics endpoint โดยตรง
 curl http://localhost:8000/metrics
-# ตรวจ prometheus.yml ว่า host:port ตรงกับแอปจริง (backend:8000)
+
+# ตรวจสอบ prometheus.yml ว่า host:port ตรงกับ service จริง (backend:8000)
 ```
 
-**Backend ต่อ PostgreSQL ไม่ได้**
+### Backend เชื่อมต่อ PostgreSQL ไม่ได้
+
 ```bash
 # ตรวจสอบ environment variables
 echo $DB_HOST $DB_NAME $DB_USER
 # ค่า default: db / mydatabase / user / password
-# ตรวจสอบ health ของ db container
+
+# ตรวจสอบสถานะ database container
 docker compose ps
 ```
 
-**Air4Thai API ไม่ตอบสนอง (503)**
+### Air4Thai API ไม่ตอบสนอง (503)
+
 ```bash
-# ทดสอบเรียก Air4Thai โดยตรง
+# ทดสอบเรียก Air4Thai API โดยตรง
 curl "http://air4thai.pcd.go.th/services/getNewAQI_JSON.php"
-# ข้อมูลจะ cache ไว้ 30 นาที (CACHE_TTL_DATA = 1800s)
+
+# หมายเหตุ: ข้อมูลถูก cache ไว้ 30 นาที (CACHE_TTL_DATA = 1800s)
 ```
 
 ---
 
-## 📚 เอกสารอ้างอิง
+## 📚 References
 
-- [Jenkinsfile Declarative Pipeline Syntax](https://www.jenkins.io/doc/book/pipeline/syntax/)
+- [Jenkins Declarative Pipeline Syntax](https://www.jenkins.io/doc/book/pipeline/syntax/)
 - [Terraform Documentation](https://developer.hashicorp.com/terraform/docs)
 - [Ansible Documentation](https://docs.ansible.com/)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [Prometheus Documentation](https://prometheus.io/docs/)
 - [Grafana Documentation](https://grafana.com/docs/)
-- [Markdown Guide](https://www.markdownguide.org/)
-- [GitHub Markdown Syntax](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)
+- [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)
