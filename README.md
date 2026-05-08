@@ -8,10 +8,10 @@
 
 | รหัสนักศึกษา | ชื่อ-นามสกุล | ความรับผิดชอบ |
 |:-----------:|-------------|---------------|
-| 6XXXXXXX | ชื่อ นามสกุล | Git, App Development |
-| 6XXXXXXX | ชื่อ นามสกุล | Jenkins, Docker |
-| 6XXXXXXX | ชื่อ นามสกุล | Terraform, Ansible |
-| 6XXXXXXX | ชื่อ นามสกุล | Kubernetes, Monitoring |
+| B6608798 | นายรับเช็ค อึ่งชัยภูมิ | Git, App Development |
+| B6629045 | นายศิริเดช สุภาพ | Jenkins, Docker |
+| B6608798 | นายจารุวัฒน์ ทองมาก | Terraform, Ansible |
+| B6612979 | นางสาววราภรณ์ ท้าวพา | Kubernetes, Monitoring |
 
 ---
 
