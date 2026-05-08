@@ -47,14 +47,14 @@ Developer
                                      │               │
                                      └───────┬───────┘
                                              ▼
-                                    Kubernetes Cluster (namespace: jenkins)
-                                    ┌─────────────────────────────────┐
-                                    │  PostgreSQL  Backend  Frontend  │
-                                    │    (Pod)      (Pod)    (Pod)    │
-                                    │                                 │
-                                    │  Service NodePort :30080 (UI)   │
-                                    │  Service NodePort :30800 (API)  │
-                                    └─────────────────────────────────┘
+                            Kubernetes Cluster (namespace: jenkins)
+                            ┌─────────────────────────────────┐
+                            │  PostgreSQL  Backend  Frontend  │
+                            │    (Pod)      (Pod)    (Pod)    │
+                            │                                 │
+                            │  Service NodePort :30080 (UI)   │
+                            │  Service NodePort :30800 (API)  │
+                            └─────────────────────────────────┘
                                              │
                                ┌─────────────┴──────────────┐
                                ▼                             ▼
@@ -299,6 +299,56 @@ feature/*   ──── พัฒนา feature แต่ละอัน (เ�
 | `GET` | `/api/favorites` | ดึงรายการสถานีโปรดจาก PostgreSQL |
 | `POST` | `/api/favorites` | บันทึกสถานีโปรดลง PostgreSQL |
 
+---
+
+## Database Schema
+```sql
+CREATE TABLE IF NOT EXISTS favorites (
+  id SERIAL PRIMARY KEY,
+  station_id TEXT,
+  station_name TEXT NOT NULL,
+  pm25_value NUMERIC,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+---
+
+## Backend response
+
+###  sample `GET /api/summary`
+ ```json
+ {
+   "total_stations": 75,
+   "stations_with_data": 72,
+   "pm25_avg": 26.4,
+   "pm25_max": 84.1,
+   "pm25_min": 3.2,
+   "worst_station": {
+     "name": "Bangkok Startup Station",
+     "city": "Bangkok",
+     "pm25": 84.1,
+     "aqi": { "label": "Unhealthy", "color": "#ef4444", "level": 4 }
+   },
+   "aqi_distribution": { "Good": 20, "Moderate": 35, "Unhealthy": 17 },
+   "fetched_at": "2026-05-08T13:49:46.663000+00:00",
+   "source": "air4thai"
+ }
+ ```
+
+### sample `GET /api/favorites`
+ ```json
+   {
+     "favorites": [
+       {
+         "id": 1,
+         "station_id": "bangkok_startup_station",
+         "station_name": "Bangkok Startup Station",
+         "pm25_value": 25.5,
+         "created_at": "2026-05-08T14:21:02.990000+00:00"
+       }
+     ]
+   }
+ ```
 ---
 
 ## 🐛 ปัญหาที่พบบ่อย (Troubleshooting)
