@@ -649,16 +649,45 @@ function pm25ToFill(pm25) {
 
 function normStr(s) { return (s || '').replace(/\s+/g,'').toLowerCase(); }
 
+function extractProvince(s) {
+  s = (s || '').trim();
+
+  if (s.includes(',')) {
+    return s.split(',').pop().trim();
+  }
+
+  s = s.replace(/จ\./g, ' ');
+  const parts = s.split(/\s+/).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : '';
+}
+
 function getProvincePm25(provinceName) {
   const pn = normStr(provinceName);
   if (!pn) return null;
+
   const hits = allLocations.filter(l => {
-    const a = normStr(l.areaTH || l.city || '');
-    return a && (a === pn || a.includes(pn) || pn.includes(a));
+    const candidates = [
+      extractProvince(l.areaTH),
+      extractProvince(l.areaEN),
+      extractProvince(l.city),
+      extractProvince(l.name),
+      l.areaTH,
+      l.areaEN,
+      l.city,
+      l.name
+    ].map(normStr);
+
+    return candidates.some(a => a && (a === pn || a.includes(pn) || pn.includes(a)));
   });
-  const vals = hits.filter(l => l.pm25 !== null).map(l => l.pm25);
+
+  const vals = hits
+    .filter(l => l.pm25 !== null && l.pm25 !== undefined)
+    .map(l => Number(l.pm25))
+    .filter(v => !Number.isNaN(v));
+
   if (!vals.length) return null;
-  return Math.round((vals.reduce((a,b) => a+b, 0) / vals.length) * 10) / 10;
+
+  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
 }
 
 function getPropName(props) {
