@@ -82,7 +82,7 @@ pipeline {
                 script {
                     sh 'kubectl create secret generic pm25-secrets --from-env-file=.env -n jenkins --dry-run=client -o yaml | kubectl apply -f -'
                     sh 'kubectl create secret generic grafana-secrets --from-env-file=.env -n jenkins --dry-run=client -o yaml | kubectl apply -f -'
-                    // รันคำสั่ง apply ผ่าน Jenkins ด้วย ServiceAccount
+                    // รันคำสั่ง apply ผ่าน Jenkins ด้วย ServiceAccount.
                     sh 'kubectl apply -R -f k8s/'
 
                     // สั่ง restart เพื่อดึง image ใหม่
