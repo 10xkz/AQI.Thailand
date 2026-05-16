@@ -103,7 +103,7 @@ def _air4thai_timestamp(aqi_last: dict) -> str | None:
         return f"{date}T{time_s}:00+07:00"
     return None
 
-# 👇 เพิ่มฟังก์ชันดึงข้อมูลดิบรวมไว้ที่เดียว (ป้องกันการดึงซ้ำซ้อน)
+# เพิ่มฟังก์ชันดึงข้อมูลดิบรวมไว้ที่เดียว (ป้องกันการดึงซ้ำซ้อน)
 async def fetch_raw_air4thai() -> dict:
     hit = cache_get(_data_cache, "air4thai:raw", CACHE_TTL_DATA)
     if hit is not None:
@@ -168,6 +168,8 @@ async def fetch_air4thai_locations() -> list[dict]:
             "name": name,
             "city": city,
             "country": "TH",
+            "areaTH": s.get("areaTH"),
+            "areaEN": s.get("areaEN"),
             "lat": lat,
             "lon": lon,
             "pm25": pm25_val,
