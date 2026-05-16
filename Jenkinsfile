@@ -92,7 +92,8 @@ pipeline {
                     sh 'kubectl rollout status deployment/pm25-backend -n jenkins --timeout=120s'
                     sh 'kubectl rollout status deployment/pm25-frontend -n jenkins --timeout=120s'
                     echo 'Pods are successfully running!'
-                    sh 'curl -sSf http://frontend:80 > /dev/null && echo "Frontend is Accessible!"'
+                    sleep 5
+                    sh 'curl -v http://frontend.jenkins.svc.cluster.local:80 > /dev/null && echo "Frontend is Accessible!"'
                 }
             }   
         }
